@@ -32,7 +32,8 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
+/* Buffer will store cdc data for windows */
+uint8_t tempbuf[7];
 /* USER CODE END PV */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -185,6 +186,8 @@ static int8_t CDC_DeInit_FS(void)
 static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 {
   /* USER CODE BEGIN 5 */
+  //Loop index variable
+  uint8_t i;
   switch(cmd)
   {
     case CDC_SEND_ENCAPSULATED_COMMAND:
@@ -225,11 +228,15 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
   /* 6      | bDataBits  |   1   | Number Data bits (5, 6, 7, 8 or 16).          */
   /*******************************************************************************/
     case CDC_SET_LINE_CODING:
-
+    	/* get information from windows */
+    	for(i=0; i<7; i++)
+    		tempbuf[i] = pbuf[i];
     break;
 
     case CDC_GET_LINE_CODING:
-
+    	/* send information to windows */
+    	for(i=0; i<7; i++)
+    		pbuf[i] = tempbuf[i];
     break;
 
     case CDC_SET_CONTROL_LINE_STATE:
