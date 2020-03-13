@@ -23,7 +23,7 @@
 #include "usbd_cdc_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+#define RX_DATA_SIZE 2048
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -32,6 +32,10 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+
+static uint8_t APP_Rx_Buffer[RX_DATA_SIZE];
+static uint32_t APP_Rx_ptr_out = 0;
+static uint32_t APP_Rx_ptr_in = 0;
 /* Buffer will store cdc data for windows */
 uint8_t tempbuf[7];
 /* USER CODE END PV */
@@ -66,7 +70,7 @@ uint8_t tempbuf[7];
 /* USER CODE BEGIN PRIVATE_DEFINES */
 /* Define size for the receive and transmit buffer over CDC */
 /* It's up to user to redefine and/or remove those define */
-#define APP_RX_DATA_SIZE  2048
+#define APP_RX_DATA_SIZE  64
 #define APP_TX_DATA_SIZE  2048
 /* USER CODE END PRIVATE_DEFINES */
 
@@ -134,7 +138,11 @@ static int8_t CDC_Receive_FS(uint8_t* pbuf, uint32_t *Len);
 static int8_t CDC_TransmitCplt_FS(uint8_t *pbuf, uint32_t *Len, uint8_t epnum);
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_DECLARATION */
-
+uint32_t CDC_Receive_BytesAvailable(void)
+{
+    /* return the bytes available in the receive circular buffer */
+    return APP_Rx_ptr_out > APP_Rx_ptr_in ? RX_DATA_SIZE - APP_Rx_ptr_out + APP_Rx_ptr_in : APP_Rx_ptr_in - APP_Rx_ptr_out;
+}
 /* USER CODE END PRIVATE_FUNCTIONS_DECLARATION */
 
 /**
@@ -274,6 +282,16 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   /* USER CODE BEGIN 6 */
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+
+  //TODO inform tasks to receive data
+  if (CDC_Receive_BytesAvailable() + *Len > RX_DATA_SIZE) {
+      return (USBD_FAIL);
+  }
+
+  for (uint32_t i = 0; i < *Len; i++) {
+      APP_Rx_Buffer[APP_Rx_ptr_in] = Buf[i];
+      APP_Rx_ptr_in = (APP_Rx_ptr_in + 1) % RX_DATA_SIZE;
+  }
   return (USBD_OK);
   /* USER CODE END 6 */
 }
@@ -327,6 +345,53 @@ static int8_t CDC_TransmitCplt_FS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
 }
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
+
+uint32_t CDC_Receive_DATA(uint8_t* recvBuf, uint32_t len)
+{
+    uint32_t count = 0;
+
+    while (APP_Rx_ptr_out != APP_Rx_ptr_in && count < len) {
+        recvBuf[count] = APP_Rx_Buffer[APP_Rx_ptr_out];
+        APP_Rx_ptr_out = (APP_Rx_ptr_out + 1) % RX_DATA_SIZE;
+        count++;
+    }
+    return count;
+}
+
+uint8_t usbIsConfigured(void)
+{
+    return (hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED);
+}
+
+
+uint8_t usbIsConnected(void)
+{
+	return (hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED);
+}
+
+uint32_t CDC_Send_FreeBytes(void)
+{
+    /*
+        return the bytes free in the circular buffer
+
+        functionally equivalent to:
+        (APP_Rx_ptr_out > APP_Rx_ptr_in ? APP_Rx_ptr_out - APP_Rx_ptr_in : APP_RX_DATA_SIZE - APP_Rx_ptr_in + APP_Rx_ptr_in)
+        but without the impact of the condition check.
+    */
+    //return ((APP_Tx_ptr_out - APP_Tx_ptr_in) + (-((int)(APP_Tx_ptr_out <= APP_Tx_ptr_in)) & TX_DATA_SIZE)) - 1;
+	//TODO change if use DMA, maybe
+	return APP_TX_DATA_SIZE;
+}
+
+uint32_t CDC_Send_DATA(const uint8_t *ptrBuffer, uint32_t sendLength)
+{
+	uint8_t status;
+	status = CDC_Transmit_FS((uint8_t*)ptrBuffer, sendLength);
+	if(status != USBD_OK)
+		sendLength = 0;
+
+	return sendLength;
+}
 
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 

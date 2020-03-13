@@ -24,10 +24,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "usbd_cdc_if.h"
-#include "tools.h"
-#include "task_scheduler.h"
-#include "motion_controller.h"
+#include "scheduler/task_scheduler.h"
+#include "scheduler/tasks.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -60,30 +58,6 @@ UART_HandleTypeDef huart6;
 
 /* USER CODE BEGIN PV */
 
-extern USBD_HandleTypeDef hUsbDeviceFS;
-
-MotionController MotionX = {
-		.back_down_limit_gpio_port = 0,
-		.back_down_limit_pin = 0,
-		.front_up_limit_gpio_port = 0,
-		.front_up_limit_pin = 0,
-		.dir_gpio_port = Y_DIR_GPIO_Port,
-		.dir_pin = Y_DIR_Pin,
-		.step_gpio_port = Y_STEP_GPIO_Port,
-		.step_pin = Y_STEP_Pin,
-		.timer = &htim10,
-		.uart = &huart2,
-		.tmc_addr = 1
-};
-
-SchedulerTasks stsTasks;
-Task tLedTask, tSendPos;
-Task tCore;
-
-char text[12] = {0};
-
-uint8_t flag = 1;
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -108,49 +82,6 @@ void print(const char *s) {
 	  HAL_UART_Transmit(&huart2, (uint8_t *)s++, 1, 10);
 	  //TODO: Use DMA or IT to send data
   }
-}
-
-/**
- *  Led task
- */
-void led()
-{
-	HAL_GPIO_TogglePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin);
-}
-
-/**
- * USB Send task
- */
-void usbSend()
-{
-	/* CDC structure where we check if the USB is transmitting */
-	USBD_CDC_HandleTypeDef  *hcdc;
-	/* if USB ready and sent previous data start transmitting*/
-	if(hUsbDeviceFS.dev_state ==  USBD_STATE_CONFIGURED && (hcdc = hUsbDeviceFS.pClassData) != 0 && hcdc->TxState == 0)
-	{
-	  /* send data over usb, we have 1000 16bit samples which is 2000bytes */
-	  //TODO Use usb to send data instead UART
-	  //CDC_Transmit_FS((uint8_t *)aDataP, 2000);
-	  /* after finish transmit we can send more */
-	}
-}
-
-void Core()
-{
-
-	if(MotionX.running==FALSE)
-	{
-		if(flag)
-		{
-			MotionMoveSteps(&MotionX, 100000, 50000, 10000, 4000);
-			flag = 0;
-		} else
-		{
-			MotionMoveSteps(&MotionX, -100000, 50000, 10000, 4000);
-			flag = 1;
-		}
-	}
-
 }
 
 /* USER CODE END 0 */
@@ -193,21 +124,15 @@ int main(void)
   MX_USART6_UART_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-  SchedulerInit(&stsTasks);
-  TaskCreate(&stsTasks, &tLedTask, &led, 255);
-  TaskStart(&tLedTask, 500);
-  TaskCreate(&stsTasks, &tCore, &Core, 5);
-  TaskStart(&tCore, 2000);
-
-  MotionControllerInitialize(&MotionX);
+  tasksInitialize();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-		//Start Schedulers
-		Scheduler(&stsTasks);
+	//Start Schedulers
+	tasksScheduler();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

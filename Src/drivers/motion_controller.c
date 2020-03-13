@@ -6,8 +6,10 @@
  */
 
 #include "motion_controller.h"
-#include "tools.h"
+
 #include "tmc2209.h"
+
+#include "../common/tools.h"
 
 /*! \brief Move the stepper motor a given number of steps.
  *

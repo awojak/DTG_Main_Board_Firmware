@@ -23,8 +23,8 @@
 #include "stm32f4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "task_scheduler.h"
-#include "motion_controller.h"
+#include "scheduler/task_scheduler.h"
+#include "drivers/motion_controller.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
