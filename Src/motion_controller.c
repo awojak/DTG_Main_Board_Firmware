@@ -7,6 +7,7 @@
 
 #include "motion_controller.h"
 #include "tools.h"
+#include "tmc2209.h"
 
 /*! \brief Move the stepper motor a given number of steps.
  *
@@ -122,6 +123,55 @@ void MotionMoveSteps(MotionController *m, signed int step, unsigned int accel, u
   }
 }
 
+/*! \brief Read Register
+ *
+ *
+ *  reg - register
+ *  data -
+ */
+HAL_StatusTypeDef MotionReadRegister(MotionController *m, uint8_t reg, uint32_t *data)
+{
+	HAL_StatusTypeDef status;
+	m->uart_tx[2] = reg; //register
+	//calculate CRC and write to last byte
+	calcCRC(m->uart_tx, 4);
+	//send by UART
+	HAL_UART_Transmit(m->uart, m->uart_tx, 4, 10);
+
+	//TODO how much to wait?
+	//Read 8 bytes
+	status = HAL_UART_Receive(m->uart, m->uart_rx, 8, 10);
+
+	if(status == HAL_OK)
+	{
+			*data = (uint32_t)((m->uart_rx[3] << 24) |  (m->uart_rx[4] << 16) | (m->uart_rx[5] << 8) | m->uart_rx[6]);
+	}
+
+	//TODO What to do if status not OK?
+	return status;
+}
+
+/*! \brief Write Register
+ *
+ *
+ */
+
+HAL_StatusTypeDef MotionWriteRegister(MotionController *m, uint8_t reg, uint32_t data)
+{
+	HAL_StatusTypeDef status;
+	m->uart_tx[2] = reg | 0x80; //register + write bit
+	m->uart_tx[3] = (uint8_t)((data >> 24) & 0xFF);
+	m->uart_tx[4] = (uint8_t)((data >> 16) & 0xFF);
+	m->uart_tx[5] = (uint8_t)((data >> 8) & 0xFF);
+	m->uart_tx[6] = (uint8_t)((data) & 0xFF);
+	//calculate CRC and write to last byte
+	calcCRC(m->uart_tx, 8);
+	//send by UART
+	status = HAL_UART_Transmit(m->uart, m->uart_tx, 8, 10);
+	//TODO What to do if status not OK?
+	return status;
+}
+
 /*! \brief Init of Motion Controller
  *
  *  Initialize Motion Controller variables to correct states
@@ -131,7 +181,46 @@ void MotionControllerInitialize(MotionController *m)
 	// Tells what part of speed ramp we are in
 	m->ramp_data.run_state = STOP;
 	m->running = FALSE;
+
+	//UART communication fill first byte
+	//sync + reserved
+	m->uart_tx[0] = 0x65;
+	m->uart_tx[1] = m->tmc_addr;
+
+	//Configure TMC by UART
+	uint32_t data;
+	data = (GCONF_PDN_DISABLE) | (GCONF_MSTEP_REG_SELECT);
+	MotionWriteRegister(m, GCONF, data);
+	data = 0;
+	//Chech if write function work
+	MotionReadRegister(m, IFCNT, &data);
+	data = 0;
+	MotionReadRegister(m, GCONF, &data);
+	data = (1 << 5);
+	MotionWriteRegister(m, IHOLD_IRUN, data);
+	data = 0;
+	MotionReadRegister(m, IFCNT, &data);
+
+	//TODO Configuracja dziala ale jest jeden problem z odbiorem danych, zawsze pierwszy bajt zawiera jakieœ smieci.
+
+	//VREF current set
+	//Can be disabled by GCONF.i_scale_analog
+	/*
+	 * UART interface IHOLD_IRUN
+	TPOWERDOWN
+	OTP
+	IRUN, IHOLD:
+	1/32 to 32/32 of full
+	scale current.
+	- Fine programming of run and
+	hold (stand still) current
+	- Change IRUN for situation
+	specific motor current
+	- Set OTP options
+	 */
 }
+
+
 
 /*! \brief Motion Update execute in timer interrupt
  *

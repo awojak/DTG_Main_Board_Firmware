@@ -79,6 +79,10 @@ typedef struct{
 	//! True if initialized successfully
 	uint8_t initialized:1;
 
+	// UART buffer data
+	uint8_t uart_tx[8];
+
+	uint8_t uart_rx[8];
 
 } MotionController;
 
