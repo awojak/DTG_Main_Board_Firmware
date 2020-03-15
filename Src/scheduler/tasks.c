@@ -12,7 +12,10 @@
 #include "task_scheduler.h"
 #include "../drivers/serial.h"
 #include "../drivers/usbd_cdc_vcp.h"
+#include "../drivers/eeprom.h"
+#include "../drivers/M24C0x.h"
 
+extern I2C_HandleTypeDef hi2c3;
 extern UART_HandleTypeDef huart2;
 extern TIM_HandleTypeDef htim10;
 extern USBD_HandleTypeDef hUsbDeviceFS;
@@ -41,6 +44,16 @@ MotionController MotionX = {
 		.uart = &huart2,
 		.tmc_addr = 1
 };
+
+eeprom_t eeprom = {
+	    .hi2c = &hi2c3,
+	    .devAddr = EEPROM_ADDR,
+		.lock_gpio_port = EEPROM_P_GPIO_Port,
+		.lock_pin = EEPROM_P_Pin,
+		.lock_pin_state = GPIO_PIN_SET
+
+};
+
 
 static void taskHandleUSBCommunication()
 {
@@ -93,7 +106,9 @@ void usbSend()
 
 void Core()
 {
-
+	uint8_t data[10];
+	uint8_t temp[10];
+	uint8_t i;
 	if(MotionX.running==FALSE)
 	{
 		if(flag)
@@ -107,11 +122,22 @@ void Core()
 		}
 	}
 
+	for(i=0; i<10; i++)
+		data[i] = i+1;
+	eepromWrite(&eeprom, 0x00, data, 10);
+	//Should be delay here
+	HAL_Delay(5);
+	eepromRead(&eeprom, 0x00, temp, 10);
+
+	if(data[0]==temp[0])
+		temp[0] = 10;
 }
 
 void tasksInitialize()
 {
 	SchedulerInit(&stsTasks);
+
+	M24C0XInitialize(&eeprom);
 	serialPort = usbVcpOpen();
 
 	TaskCreate(&stsTasks, &tLedTask, &led, 255);

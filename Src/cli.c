@@ -25,10 +25,13 @@
 #include "common/buf_writer.h"
 #include "common/printf.h"
 #include "common/string_light.h"
+#include "common/typeconversion.h"
 
 #include "drivers/serial.h"
 
 #include "main.h"
+#include "cli.h"
+#include "settings.h"
 
 uint8_t cliMode = 0;
 static serialPort_t *cliPort;
@@ -182,7 +185,7 @@ static void cliPrintErrorLinef(const char *format, ...)
     cliPrintErrorVa(format, va);
     cliPrintLinefeed();
 }
-/*
+
 static void printValuePointer(const setting_t *var, const void *valuePointer, uint32_t full)
 {
     int32_t value = 0;
@@ -316,14 +319,14 @@ static void cliPrintVarRange(const setting_t *var)
         break;
     }
 }
-*/
+
 typedef union {
     uint32_t uint_value;
     int32_t int_value;
     float float_value;
 } int_float_value_t;
 
-/*
+
 static void cliSetIntFloatVar(const setting_t *var, const int_float_value_t value)
 {
     void *ptr = settingGetValuePointer(var);
@@ -352,7 +355,7 @@ static void cliSetIntFloatVar(const setting_t *var, const int_float_value_t valu
         break;
     }
 }
-*/
+
 
 static void cliPrompt(void)
 {
@@ -431,8 +434,7 @@ static void cliExit(char *cmdline)
 }
 static void cliGet(char *cmdline)
 {
-	UNUSED(cmdline);
-	/*
+
     const setting_t *val;
     int matchedCommands = 0;
     char name[SETTING_MAX_NAME_LENGTH];
@@ -458,7 +460,6 @@ static void cliGet(char *cmdline)
     }
 
     cliPrintErrorLine("Invalid name");
-    */
 }
 
 static void cliSet(char *cmdline)

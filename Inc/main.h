@@ -164,7 +164,24 @@ void Error_Handler(void);
 #define LCD_DB5_Pin GPIO_PIN_1
 #define LCD_DB5_GPIO_Port GPIOE
 /* USER CODE BEGIN Private defines */
+#define MAX_PROFILE_COUNT 3
 
+#define USE_I2C_EEPROM
+#define EEPROM_PAGE_SIZE 0x100
+#define EEPROM_ADDR 0x50 //7 bits, without r/w bit
+#define I2C_SHIFTED_ADDR(addr) (addr<<1) //shift address to left, make space for w/r bit
+
+//Tylko w celu testów
+#define SETTINGS_TABLE_COUNT 5
+#define SETTING_MAX_NAME_LENGTH 15
+#define SETTING_MIN_MAX_INDEX_BYTES 5 //nie mam pojêcia jaka wartosc wpisac
+#define SETTING_ENCODED_NAME_MAX_BYTES 5// nie mam pojêcia jak¹ wartoœc wpisac
+#define setting_min_t int32_t //nie mam pojêcia jak¹ wartoœc wpisac
+#define setting_max_t uint32_t //nie mam pojêcia jak¹ wartoœc wpisac
+#define setting_offset_t uint32_t //nie mam pojêcia jak¹ wartoœc wpisac, mo¿e ma byc int
+#define SETTINGS_WORDS_BITS_PER_CHAR 8 //nie mam pojêcia
+#define SETTING_MAX_WORD_LENGTH 5//nie mam pojecia
+#define SETTINGS_PGN_COUNT 3
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

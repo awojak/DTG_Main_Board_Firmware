@@ -9,7 +9,9 @@
 #include "../Inc/usbd_cdc_if.h"
 #include "../common/utils.h"
 
+//TODO IMPORTANT change to unblocking timeout
 #define USB_TIMEOUT 50
+
 static vcpPort_t vcpPort;
 
 static void usbVcpSetBaudRate(serialPort_t *instance, uint32_t baudRate)
@@ -72,7 +74,7 @@ static void usbVcpWriteBuf(serialPort_t *instance, const void *data, int count)
         uint32_t txed = CDC_Send_DATA(p, count);
         count -= txed;
         p += txed;
-
+        //TODO IMPORTANT change to unblocking timeout
         if (HAL_GetTick() - start > USB_TIMEOUT) {
             break;
         }
@@ -98,7 +100,7 @@ static bool usbVcpFlush(vcpPort_t *port)
         uint32_t txed = CDC_Send_DATA(p, count);
         count -= txed;
         p += txed;
-
+        //TODO IMPORTANT change to unblocking timeout
         if (HAL_GetTick() - start > USB_TIMEOUT) {
             break;
         }
