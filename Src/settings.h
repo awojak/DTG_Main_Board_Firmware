@@ -6,17 +6,11 @@
 
 #include "config/parameter_group.h"
 
-//#include "settings_generated.h"
-
-typedef struct lookupTableEntry_s {
-    const char * const *values;
-    const uint8_t valueCount;
-} lookupTableEntry_t;
-
 #define SETTING_TYPE_OFFSET 0
 #define SETTING_SECTION_OFFSET 4
 #define SETTING_MODE_OFFSET 6
 
+/* Settings Flags */
 typedef enum {
     // value type, bits 0-3
     VAR_UINT8 = (0 << SETTING_TYPE_OFFSET),
@@ -31,9 +25,7 @@ typedef enum {
 typedef enum {
     // value section, bits 4-5
     MASTER_VALUE = (0 << SETTING_SECTION_OFFSET),
-    PROFILE_VALUE = (1 << SETTING_SECTION_OFFSET),
-    CONTROL_RATE_VALUE = (2 << SETTING_SECTION_OFFSET), // 0x20
-    BATTERY_CONFIG_VALUE = (3 << SETTING_SECTION_OFFSET),
+    PROFILE_VALUE = (1 << SETTING_SECTION_OFFSET)
 } setting_section_e;
 
 typedef enum {
@@ -42,30 +34,36 @@ typedef enum {
     MODE_LOOKUP = (1 << SETTING_MODE_OFFSET), // 0x40
 } setting_mode_e;
 
+/* Settings Flags End */
+
 #define SETTING_TYPE_MASK (0x0F)
 #define SETTING_SECTION_MASK (0x30)
 #define SETTING_MODE_MASK (0xC0)
 
+typedef struct lookupTableEntry_s {
+    const char * const *values;
+    const uint8_t valueCount;
+} lookupTableEntry_t;
+
 typedef struct settingMinMaxConfig_s {
-    const uint8_t indexes[SETTING_MIN_MAX_INDEX_BYTES];
+    const uint32_t def;
+    const uint32_t min;
+    const uint32_t max;
 } settingMinMaxConfig_t;
 
-typedef struct settingLookupTableConfig_s {
-    const uint8_t tableIndex;
-} settingLookupTableConfig_t;
-
-typedef union {
-    settingLookupTableConfig_t lookup;
-    settingMinMaxConfig_t minmax;
-} settingConfig_t;
-
 typedef struct {
-    const uint8_t encoded_name[SETTING_ENCODED_NAME_MAX_BYTES];
+    const char *name; //tablica zawieraj¹ca nazwê parametru
     const uint8_t type; // see settingFlag_e
-    const settingConfig_t config;
-    const setting_offset_t offset;
 
-} __attribute__((packed)) setting_t;
+    /* Pointer for parameter */
+    const void *parameterPointer;
+
+    /* Only for numeric parameter type */
+    const settingMinMaxConfig_t config;
+
+    /* Only for lookup parameter type*/
+    lookupTableEntry_t lookupTable;
+} setting_t;
 
 static inline setting_type_e SETTING_TYPE(const setting_t *s) { return s->type &  SETTING_TYPE_MASK; }
 static inline setting_section_e SETTING_SECTION(const setting_t *s) { return s->type & SETTING_SECTION_MASK; }
@@ -100,11 +98,11 @@ const void * settingGetCopyValuePointer(const setting_t *val);
 // Returns the minimum valid value for the given setting_t. setting_min_t
 // depends on the target and build options, but will always be a signed
 // integer (e.g. intxx_t,)
-setting_min_t settingGetMin(const setting_t *val);
+int32_t settingGetMin(const setting_t *val);
 // Returns the maximum valid value for the given setting_t. setting_max_t
 // depends on the target and build options, but will always be an unsigned
 // integer (e.g. uintxx_t,)
-setting_max_t settingGetMax(const setting_t *val);
+uint32_t settingGetMax(const setting_t *val);
 // Returns the lookup table for the given setting. If the setting mode
 // is not MODE_LOOKUP, it returns NULL;
 const lookupTableEntry_t * settingLookupTable(const setting_t *val);
@@ -124,7 +122,7 @@ const char * settingGetString(const setting_t *val);
 void settingSetString(const setting_t *val, const char *s, size_t size);
 // Returns the max string length (without counting the '\0' terminator)
 // for setting of type VAR_STRING. Otherwise it returns 0.
-setting_max_t settingGetStringMaxLength(const setting_t *val);
+uint32_t settingGetStringMaxLength(const setting_t *val);
 
 // Retrieve the setting indexes for the given PG. If the PG is not
 // found, these function returns false.

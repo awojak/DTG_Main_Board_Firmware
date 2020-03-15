@@ -32,6 +32,8 @@
 #include "main.h"
 #include "cli.h"
 #include "settings.h"
+#include "parameters.h"
+#include "parameters.c"
 
 uint8_t cliMode = 0;
 static serialPort_t *cliPort;
@@ -189,7 +191,7 @@ static void cliPrintErrorLinef(const char *format, ...)
 static void printValuePointer(const setting_t *var, const void *valuePointer, uint32_t full)
 {
     int32_t value = 0;
-    char buf[SETTING_MAX_NAME_LENGTH];
+    char buf[PARAMETER_MAX_NAME_LENGTH];
 
     switch (SETTING_TYPE(var)) {
     case VAR_UINT8:
@@ -437,11 +439,11 @@ static void cliGet(char *cmdline)
 
     const setting_t *val;
     int matchedCommands = 0;
-    char name[SETTING_MAX_NAME_LENGTH];
+    char name[PARAMETER_MAX_NAME_LENGTH];
 
     while(*cmdline == ' ') ++cmdline; // ignore spaces
 
-    for (uint32_t i = 0; i < SETTINGS_TABLE_COUNT; i++) {
+    for (uint32_t i = 0; i < ARRAYLEN(parametersTable); i++) {
         val = settingGet(i);
         if (settingNameContains(val, name, cmdline)) {
             cliPrintf("%s = ", name);

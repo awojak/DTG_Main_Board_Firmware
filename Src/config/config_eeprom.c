@@ -33,8 +33,10 @@
 #include "../common/utils.h"
 //#include "fc/config.h"
 
+//TODO to nie zadzia³a
 extern uint8_t __config_start;   // configured via linker script when building binaries.
 extern uint8_t __config_end;
+#define MAX_PROFILE_COUNT 3
 
 static uint16_t eepromConfigSize;
 
