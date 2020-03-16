@@ -8,7 +8,6 @@
 #include "settings.h"
 #include "common/maths.h"
 #include "parameters.h"
-#include "parameters.c"
 
 void settingGetName(const setting_t *val, char *buf)
 {
@@ -30,7 +29,7 @@ bool settingNameIsExactMatch(const setting_t *val, char *buf, const char *cmdlin
 const setting_t *settingFind(const char *name)
 {
 	char buf[PARAMETER_MAX_NAME_LENGTH];
-	for (int ii = 0; ii < ARRAYLEN(parametersTable); ii++) {
+	for (int ii = 0; ii < paramsTableLen; ii++) {
 		const setting_t *setting = parametersTable[ii];
 		settingGetName(setting, buf);
 		if (strcmp(buf, name) == 0) {
@@ -42,7 +41,7 @@ const setting_t *settingFind(const char *name)
 
 const setting_t *settingGet(unsigned index)
 {
-	return index < ARRAYLEN(parametersTable) ? parametersTable[index] : NULL;
+	return index < paramsTableLen ? parametersTable[index] : NULL;
 }
 
 //unsigned settingGetIndex(const setting_t *val)
@@ -52,7 +51,7 @@ const setting_t *settingGet(unsigned index)
 
 bool settingsValidate(unsigned *invalidIndex)
 {
-	for (unsigned ii = 0; ii < ARRAYLEN(parametersTable); ii++) {
+	for (unsigned ii = 0; ii < paramsTableLen; ii++) {
 		const setting_t *setting = settingGet(ii);
 		uint32_t min = settingGetMin(setting);
 		uint32_t max = settingGetMax(setting);

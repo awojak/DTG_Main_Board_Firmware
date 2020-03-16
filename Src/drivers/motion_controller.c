@@ -327,3 +327,15 @@ void MotionMoveStop(MotionController *m, unsigned char mode, unsigned int decel)
 
 }
 
+void MotionJogSteps(MotionController *m, signed int steps)
+{
+	MotionMoveSteps(m, steps, m->rampJog.accel, m->rampJog.decel, m->rampJog.speed);
+}
+void MotionMove(MotionController *m, int dir)
+{
+
+}
+void MotionMovePos(MotionController *m, int pos)
+{
+	MotionMoveSteps(m, pos - m->position, m->rampMove.accel, m->rampMove.decel, m->rampMove.speed);
+}

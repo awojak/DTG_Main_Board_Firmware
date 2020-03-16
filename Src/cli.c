@@ -33,7 +33,6 @@
 #include "cli.h"
 #include "settings.h"
 #include "parameters.h"
-#include "parameters.c"
 
 uint8_t cliMode = 0;
 static serialPort_t *cliPort;
@@ -89,11 +88,13 @@ static void cliPrintErrorLine(const char *str)
 #ifdef CLI_MINIMAL_VERBOSITY
 #define cliPrintHashLine(str)
 #else
+/*
 static void cliPrintHashLine(const char *str)
 {
     cliPrint("\r\n# ");
     cliPrintLine(str);
 }
+*/
 #endif
 
 static void cliPutp(void *p, char ch)
@@ -254,7 +255,7 @@ static void printValuePointer(const setting_t *var, const void *valuePointer, ui
     }
     }
 }
-
+/*
 static bool valuePtrEqualsDefault(const setting_t *value, const void *ptr, const void *ptrDefault)
 {
     bool result = false;
@@ -289,6 +290,7 @@ static bool valuePtrEqualsDefault(const setting_t *value, const void *ptr, const
     }
     return result;
 }
+*/
 
 static void cliPrintVar(const setting_t *var, uint32_t full)
 {
@@ -364,7 +366,7 @@ static void cliPrompt(void)
     cliPrint("\r\n# ");
     bufWriterFlush(cliWriter);
 }
-
+/*
 static void cliShowParseError(void)
 {
     cliPrintErrorLinef("Parse error");
@@ -391,16 +393,6 @@ static bool isEmpty(const char *string)
     return (string == NULL || *string == '\0') ? true : false;
 }
 
-typedef struct {
-    const char *name;
-#ifndef SKIP_CLI_COMMAND_HELP
-    const char *description;
-    const char *args;
-#endif
-    void (*func)(char *cmdline);
-} clicmd_t;
-
-/*
 static const char *checkCommand(const char *cmdLine, const char *command)
 {
     if (!sl_strncasecmp(cmdLine, command, strlen(command))   // command names match
@@ -443,7 +435,7 @@ static void cliGet(char *cmdline)
 
     while(*cmdline == ' ') ++cmdline; // ignore spaces
 
-    for (uint32_t i = 0; i < ARRAYLEN(parametersTable); i++) {
+    for (uint32_t i = 0; i < paramsTableLen; i++) {
         val = settingGet(i);
         if (settingNameContains(val, name, cmdline)) {
             cliPrintf("%s = ", name);
@@ -466,12 +458,10 @@ static void cliGet(char *cmdline)
 
 static void cliSet(char *cmdline)
 {
-	UNUSED(cmdline);
-	/*
     uint32_t len;
     const setting_t *val;
     char *eqptr = NULL;
-    char name[SETTING_MAX_NAME_LENGTH];
+    char name[PARAMETER_MAX_NAME_LENGTH];
 
     while(*cmdline == ' ') ++cmdline; // ignore spaces
 
@@ -479,7 +469,7 @@ static void cliSet(char *cmdline)
 
     if (len == 0 || (len == 1 && cmdline[0] == '*')) {
         cliPrintLine("Current settings:");
-        for (uint32_t i = 0; i < SETTINGS_TABLE_COUNT; i++) {
+        for (uint32_t i = 0; i < paramsTableLen; i++) {
             val = settingGet(i);
             settingGetName(val, name);
             cliPrintf("%s = ", name);
@@ -501,7 +491,7 @@ static void cliSet(char *cmdline)
             eqptr++;
         }
 
-        for (uint32_t i = 0; i < SETTINGS_TABLE_COUNT; i++) {
+        for (uint32_t i = 0; i < paramsTableLen; i++) {
             val = settingGet(i);
             // ensure exact match when setting to prevent setting variables with shorter names
             if (settingNameIsExactMatch(val, name, cmdline, variableNameLength)) {
@@ -566,7 +556,6 @@ static void cliSet(char *cmdline)
         // no equals, check for matching variables.
         cliGet(cmdline);
     }
-    */
 }
 
 static void cliStatus(char *cmdline)
@@ -585,19 +574,10 @@ static void cliStatus(char *cmdline)
     cliPrintLinefeed();
 
     cliPrintLine("STM32 system clocks:");
-#if defined(USE_HAL_DRIVER)
     cliPrintLinef("  SYSCLK = %d MHz", HAL_RCC_GetSysClockFreq() / 1000000);
     cliPrintLinef("  HCLK   = %d MHz", HAL_RCC_GetHCLKFreq() / 1000000);
     cliPrintLinef("  PCLK1  = %d MHz", HAL_RCC_GetPCLK1Freq() / 1000000);
     cliPrintLinef("  PCLK2  = %d MHz", HAL_RCC_GetPCLK2Freq() / 1000000);
-#else
-    RCC_ClocksTypeDef clocks;
-    RCC_GetClocksFreq(&clocks);
-    cliPrintLinef("  SYSCLK = %d MHz", clocks.SYSCLK_Frequency / 1000000);
-    cliPrintLinef("  HCLK   = %d MHz", clocks.HCLK_Frequency / 1000000);
-    cliPrintLinef("  PCLK1  = %d MHz", clocks.PCLK1_Frequency / 1000000);
-    cliPrintLinef("  PCLK2  = %d MHz", clocks.PCLK2_Frequency / 1000000);
-#endif
 }
 
 static void cliVersion(char *cmdline)
@@ -615,6 +595,12 @@ static void cliVersion(char *cmdline)
     cliPrintLinef("# GCC-%s",
         compilerVersion
     );
+}
+
+static void cliGCode(char *cmdline)
+{
+	//TODO To implement gcode interpretation
+	cliPrintLine("Not supported yet!");
 }
 
 static void cliSave(char *cmdline)
@@ -672,6 +658,7 @@ static void cliHelp(char *cmdline);
 const clicmd_t cmdTable[] = {
 	CLI_COMMAND_DEF("defaults", "reset to defaults and reboot", NULL, cliDefaults),
     CLI_COMMAND_DEF("exit", NULL, NULL, cliExit),
+	CLI_COMMAND_DEF("gcode", "gcode to movment", NULL, cliGCode),
     CLI_COMMAND_DEF("get", "get variable value", "[name]", cliGet),
     CLI_COMMAND_DEF("help", NULL, NULL, cliHelp),
     CLI_COMMAND_DEF("save", "save and reboot", NULL, cliSave),

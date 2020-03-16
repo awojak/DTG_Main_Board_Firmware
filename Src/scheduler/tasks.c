@@ -14,6 +14,7 @@
 #include "../drivers/usbd_cdc_vcp.h"
 #include "../drivers/eeprom.h"
 #include "../drivers/M24C0x.h"
+#include "../parameters.h"
 
 extern I2C_HandleTypeDef hi2c3;
 extern UART_HandleTypeDef huart2;
@@ -31,7 +32,7 @@ Task tCore;
 char text[12] = {0};
 uint8_t flag = 1;
 
-MotionController MotionX = {
+MotionController MotionY = {
 		.back_down_limit_gpio_port = 0,
 		.back_down_limit_pin = 0,
 		.front_up_limit_gpio_port = 0,
@@ -42,7 +43,16 @@ MotionController MotionX = {
 		.step_pin = Y_STEP_Pin,
 		.timer = &htim10,
 		.uart = &huart2,
-		.tmc_addr = 1
+		.tmc_addr = 1,
+		.rampPrint.speed = PARAMETER_PRINT_SPEED_Y,
+		.rampPrint.accel = PARAMETER_PRINT_ACCEL_Y,
+		.rampPrint.decel = PARAMETER_PRINT_DECEL_Y,
+		.rampJog.speed = PARAMETER_JOG_SPEED_Y,
+		.rampJog.accel = PARAMETER_JOG_ACCEL_Y,
+		.rampJog.decel = PARAMETER_JOG_DECEL_Y,
+		.rampMove.speed = PARAMETER_MOVE_SPEED_Y,
+		.rampMove.accel = PARAMETER_MOVE_ACCEL_Y,
+		.rampMove.decel = PARAMETER_MOVE_DECEL_Y
 };
 
 eeprom_t eeprom = {
@@ -109,15 +119,15 @@ void Core()
 	uint8_t data[10];
 	uint8_t temp[10];
 	uint8_t i;
-	if(MotionX.running==FALSE)
+	if(MotionY.running==FALSE)
 	{
 		if(flag)
 		{
-			MotionMoveSteps(&MotionX, 100000, 50000, 10000, 4000);
+			MotionJogSteps(&MotionY, 100000);
 			flag = 0;
 		} else
 		{
-			MotionMoveSteps(&MotionX, -100000, 50000, 10000, 4000);
+			MotionJogSteps(&MotionY, -100000);
 			flag = 1;
 		}
 	}
@@ -149,7 +159,7 @@ void tasksInitialize()
 	TaskCreate(&stsTasks, &tHandleUSBCommunication, &taskHandleUSBCommunication, 10);
 	TaskStart(&tHandleUSBCommunication, 10);
 
-	MotionControllerInitialize(&MotionX);
+	MotionControllerInitialize(&MotionY);
 
 }
 

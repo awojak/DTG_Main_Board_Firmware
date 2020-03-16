@@ -12,6 +12,15 @@
 
 extern uint8_t cliMode;
 
+typedef struct {
+    const char *name;
+#ifndef SKIP_CLI_COMMAND_HELP
+    const char *description;
+    const char *args;
+#endif
+    void (*func)(char *cmdline);
+} clicmd_t;
+
 //struct serialConfig_s;
 //void cliInit(const struct serialConfig_s *serialConfig);
 void cliProcess(void);

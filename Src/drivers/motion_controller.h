@@ -21,7 +21,7 @@
  */
 typedef struct {
   //! What part of the speed ramp we are in.
-  unsigned char run_state : 3;
+  unsigned char run_state;
   //! Direction stepper motor should move.
   unsigned char dir : 1;
   //! Peroid of next timer delay. At start this value set the accelration rate.
@@ -35,6 +35,12 @@ typedef struct {
   //! Counter used when accelerateing/decelerateing to calculate step_delay.
   signed int accel_count;
 } speedRampData;
+
+typedef struct {
+	unsigned int accel;
+	unsigned int decel;
+	unsigned int speed;
+} rampParameters;
 
 /*! \brief Holding configuration of the motion controller
  *
@@ -66,6 +72,11 @@ typedef struct{
 
 	//! TMC driver UART address to communicate with
 	uint8_t	tmc_addr;
+
+	//! Contains ramp data for each movements types
+	rampParameters rampPrint;
+	rampParameters rampJog;
+	rampParameters rampMove;
 
 	//! Contains data used by timer interrupt to calculate speed profile.
 	speedRampData ramp_data;
@@ -116,6 +127,11 @@ typedef struct{
 #define RUN   3
 
 void MotionControllerInitialize(MotionController *m);
+
+void MotionJogSteps(MotionController *m, signed int steps);
+void MotionMove(MotionController *m, int dir);
+void MotionMovePos(MotionController *m, int pos);
+
 void MotionMoveSteps(MotionController *m, signed int step, unsigned int accel, unsigned int decel, unsigned int speed);
 void MotionMoveSpeed(MotionController *m, unsigned char dir, unsigned int accel, unsigned int speed);
 void MotionMoveStop(MotionController *m, unsigned char mode, unsigned int decel);

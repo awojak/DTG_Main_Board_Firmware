@@ -61,7 +61,7 @@
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern TIM_HandleTypeDef htim10;
 /* USER CODE BEGIN EV */
-extern MotionController MotionX;
+extern MotionController MotionY;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -206,7 +206,7 @@ void SysTick_Handler(void)
 void TIM1_UP_TIM10_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 0 */
-	MotionUpdate(&MotionX);
+	MotionUpdate(&MotionY);
   /* USER CODE END TIM1_UP_TIM10_IRQn 0 */
   HAL_TIM_IRQHandler(&htim10);
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 1 */

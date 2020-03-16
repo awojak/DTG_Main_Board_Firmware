@@ -56,7 +56,7 @@ typedef struct {
     const uint8_t type; // see settingFlag_e
 
     /* Pointer for parameter */
-    const void *parameterPointer;
+    void * const parameterPointer;
 
     /* Only for numeric parameter type */
     const settingMinMaxConfig_t config;

@@ -8,6 +8,10 @@
 #ifndef SCHEDULER_TASKS_H_
 #define SCHEDULER_TASKS_H_
 
+#include "../drivers/motion_controller.h"
+
+extern MotionController MotionY;
+
 void tasksInitialize();
 void tasksScheduler();
 
