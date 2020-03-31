@@ -28,7 +28,7 @@ bool settingNameIsExactMatch(const setting_t *val, char *buf, const char *cmdlin
 
 const setting_t *settingFind(const char *name)
 {
-	char buf[PARAMETER_MAX_NAME_LENGTH];
+	char buf[PARAMETERS_MAX_NAME_LENGTH];
 	for (int ii = 0; ii < paramsTableLen; ii++) {
 		const setting_t *setting = parametersTable[ii];
 		settingGetName(setting, buf);

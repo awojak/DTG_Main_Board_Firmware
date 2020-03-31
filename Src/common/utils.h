@@ -20,6 +20,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef union {
+	uint8_t b[4];
+    uint32_t uint_value;
+    int32_t int_value;
+    float float_value;
+} int_float_value_t;
+
 #define ARRAYLEN(x) (sizeof(x) / sizeof((x)[0]))
 #define ARRAYEND(x) (&(x)[ARRAYLEN(x)])
 

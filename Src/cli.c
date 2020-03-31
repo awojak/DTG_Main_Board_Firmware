@@ -1,4 +1,5 @@
 /*
+
  * This file is part of Cleanflight. Modified to DTG project.
  *
  * Cleanflight is free software: you can redistribute it and/or modify
@@ -28,6 +29,7 @@
 #include "common/typeconversion.h"
 
 #include "drivers/serial.h"
+#include "config/config_eeprom.h"
 
 #include "main.h"
 #include "cli.h"
@@ -192,7 +194,7 @@ static void cliPrintErrorLinef(const char *format, ...)
 static void printValuePointer(const setting_t *var, const void *valuePointer, uint32_t full)
 {
     int32_t value = 0;
-    char buf[PARAMETER_MAX_NAME_LENGTH];
+    char buf[PARAMETERS_MAX_NAME_LENGTH];
 
     switch (SETTING_TYPE(var)) {
     case VAR_UINT8:
@@ -324,13 +326,6 @@ static void cliPrintVarRange(const setting_t *var)
     }
 }
 
-typedef union {
-    uint32_t uint_value;
-    int32_t int_value;
-    float float_value;
-} int_float_value_t;
-
-
 static void cliSetIntFloatVar(const setting_t *var, const int_float_value_t value)
 {
     void *ptr = settingGetValuePointer(var);
@@ -431,7 +426,7 @@ static void cliGet(char *cmdline)
 
     const setting_t *val;
     int matchedCommands = 0;
-    char name[PARAMETER_MAX_NAME_LENGTH];
+    char name[PARAMETERS_MAX_NAME_LENGTH];
 
     while(*cmdline == ' ') ++cmdline; // ignore spaces
 
@@ -461,7 +456,7 @@ static void cliSet(char *cmdline)
     uint32_t len;
     const setting_t *val;
     char *eqptr = NULL;
-    char name[PARAMETER_MAX_NAME_LENGTH];
+    char name[PARAMETERS_MAX_NAME_LENGTH];
 
     while(*cmdline == ' ') ++cmdline; // ignore spaces
 
@@ -603,6 +598,38 @@ static void cliGCode(char *cmdline)
 	cliPrintLine("Not supported yet!");
 }
 
+static void cliLoad(char* cmdline)
+{
+	int err;
+	cliPrintLine("Loading");
+	err = loadEEPROM();
+
+	switch(err){
+	case HAL_OK:
+		cliPrintLine("Settings successfully loaded from EEPROM!");
+		break;
+	case HAL_BUSY:
+		cliPrintLine("I2C HAL BUSY!");
+		break;
+	case HAL_ERROR:
+		cliPrintLine("I2C HAL ERROR!");
+		break;
+	case EEPROM_ERROR_CRC:
+		cliPrintLine("Error CRC!");
+		break;
+	case EEPROM_ERROR_VERSION:
+		cliPrintLine("Error Header Version!");
+		break;
+	case EEPROM_ERROR_NO_MEMORY:
+		cliPrintLine("Error EEPROM Memory is FULL !");
+		break;
+	case EEPROM_ERROR_END_MEMORY:
+		cliPrintLine("Error END of EEPROM!");
+		break;
+	default:
+		cliPrintLine("Error!");
+	}
+}
 static void cliSave(char *cmdline)
 {
     UNUSED(cmdline);
@@ -615,10 +642,16 @@ static void cliSave(char *cmdline)
     }
 #endif
 
-    cliPrint("Saving");
+    cliPrintLine("Saving");
     //copyCurrentProfileToProfileSlot(getConfigProfile();
     //writeEEPROM();
-    cliReboot();
+    if(writeConfigToEEPROM() == 0)
+    {
+    	cliPrintLine("Settings successfully saved in EEPROM!");
+    } else {
+    	cliPrintLine("Error to save settings !");
+    }
+    //cliReboot();
 }
 
 static void cliDefaults(char *cmdline)
@@ -661,6 +694,7 @@ const clicmd_t cmdTable[] = {
 	CLI_COMMAND_DEF("gcode", "gcode to movment", NULL, cliGCode),
     CLI_COMMAND_DEF("get", "get variable value", "[name]", cliGet),
     CLI_COMMAND_DEF("help", NULL, NULL, cliHelp),
+	CLI_COMMAND_DEF("load", "load settings from EEPROM", NULL, cliLoad),
     CLI_COMMAND_DEF("save", "save and reboot", NULL, cliSave),
     CLI_COMMAND_DEF("set", "change setting", "[<name>=<value>]", cliSet),
     CLI_COMMAND_DEF("status", "show status", NULL, cliStatus),

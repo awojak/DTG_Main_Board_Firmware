@@ -24,7 +24,7 @@
 // needed, and updating the checksum as it goes.
 
 typedef struct config_streamer_s {
-    uintptr_t address;
+    uint16_t address;
     int size;
     union {
         uint8_t b[4];
@@ -35,11 +35,20 @@ typedef struct config_streamer_s {
     bool unlocked;
 } config_streamer_t;
 
+//Common
 void config_streamer_init(config_streamer_t *c);
+int config_streamer_finish(config_streamer_t *c);
+int config_streamer_status(config_streamer_t *c);
 
-void config_streamer_start(config_streamer_t *c, uintptr_t base, int size);
+//Only for read
+void config_streamer_read_start(config_streamer_t *c, uint16_t base, int size);
+int config_streamer_read(config_streamer_t *c, uint8_t *p, uint32_t size);
+
+//Only for write
+void config_streamer_write_start(config_streamer_t *c, uint16_t base, int size);
 int config_streamer_write(config_streamer_t *c, const uint8_t *p, uint32_t size);
 int config_streamer_flush(config_streamer_t *c);
 
-int config_streamer_finish(config_streamer_t *c);
-int config_streamer_status(config_streamer_t *c);
+
+
+

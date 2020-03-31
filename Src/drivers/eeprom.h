@@ -26,13 +26,18 @@ typedef struct eeprom_s {
 
 } eeprom_t;
 
+extern eeprom_t eeprom;
 
 struct eppromVTable {
     uint8_t (*eepromRead)(eeprom_t *instance, uint8_t addr, uint8_t *data, uint8_t length);
     uint8_t (*eepromWrite)(eeprom_t *instance, uint8_t addr, uint8_t *data, uint8_t length);
+    void (*eepromUnlock)(eeprom_t *instance);
+    void (*eepromLock)(eeprom_t *instance);
 };
 
 uint8_t eepromWrite(eeprom_t *instance, uint8_t addr, uint8_t *data, uint8_t length);
 uint8_t eepromRead(eeprom_t *instance, uint8_t addr, uint8_t *data, uint8_t length);
+void eepromUnlock(eeprom_t *instance);
+void eepromLock(eeprom_t *instance);
 
 #endif /* DRIVERS_EEPROM_H_ */

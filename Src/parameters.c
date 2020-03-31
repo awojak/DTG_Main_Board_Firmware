@@ -103,5 +103,5 @@ const setting_t *parametersTable[] = {
 		&jog_decel_y
 } ;
 
-const uint8_t paramsTableLen = ARRAYLEN(parametersTable);
+const uint16_t paramsTableLen = ARRAYLEN(parametersTable);
 

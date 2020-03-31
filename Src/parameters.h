@@ -10,9 +10,12 @@
 #include "settings.h"
 
 extern const setting_t *parametersTable[];
-extern const uint8_t paramsTableLen;
+extern const uint16_t paramsTableLen;
 
-#define PARAMETER_MAX_NAME_LENGTH 20
+//change every time if you change parameters table
+#define PARAMETERS_VERSION 1
+
+#define PARAMETERS_MAX_NAME_LENGTH 20
 
 /* Parameters for motor during printing */
 #define PARAMETER_PRINT_SPEED_Y 100

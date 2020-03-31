@@ -28,249 +28,274 @@
 #include "../config/config_streamer.h"
 #include "../config/parameter_group.h"
 
-//#include "drivers/system.h"
 #include "main.h"
+#include "../parameters.h"
 #include "../common/utils.h"
-//#include "fc/config.h"
-
-//TODO to nie zadzia³a
-extern uint8_t __config_start;   // configured via linker script when building binaries.
-extern uint8_t __config_end;
-#define MAX_PROFILE_COUNT 3
-
-static uint16_t eepromConfigSize;
-
-typedef enum {
-    CR_CLASSICATION_SYSTEM   = 0,
-    CR_CLASSICATION_PROFILE1 = 1,
-    CR_CLASSICATION_PROFILE2 = 2,
-    CR_CLASSICATION_PROFILE3 = 3,
-    CR_CLASSICATION_PROFILE_LAST = CR_CLASSICATION_PROFILE3,
-} configRecordFlags_e;
-
-#define CR_CLASSIFICATION_MASK (0x3)
 
 // Header for the saved copy.
 typedef struct {
     uint8_t format;
 } PG_PACKED configHeader_t;
 
-// Header for each stored PG.
-typedef struct {
-    // split up.
-    uint16_t size;
-    pgn_t pgn;
-    uint8_t version;
-
-    // lower 2 bits used to indicate system or profile number, see CR_CLASSIFICATION_MASK
-    uint8_t flags;
-
-    uint8_t pg[];
-} PG_PACKED configRecord_t;
-
-// Footer for the saved copy.
-typedef struct {
-    uint16_t terminator;
-} PG_PACKED configFooter_t;
-// checksum is appended just after footer. It is not included in footer to make checksum calculation consistent
-
-// Used to check the compiler packing at build time.
-typedef struct {
-    uint8_t byte;
-    uint32_t word;
-} PG_PACKED packingTest_t;
 
 void initEEPROM(void)
 {
-    // Verify that this architecture packs as expected.
-    BUILD_BUG_ON(offsetof(packingTest_t, byte) != 0);
-    BUILD_BUG_ON(offsetof(packingTest_t, word) != 1);
-    BUILD_BUG_ON(sizeof(packingTest_t) != 5);
-
-    BUILD_BUG_ON(sizeof(configHeader_t) != 1);
-    BUILD_BUG_ON(sizeof(configFooter_t) != 2);
-    BUILD_BUG_ON(sizeof(configRecord_t) != 6);
+	//TODO
 }
 
 static uint16_t updateCRC(uint16_t crc, const void *data, uint32_t length)
 {
-    const uint8_t *p = (const uint8_t *)data;
-    const uint8_t *pend = p + length;
-
-    for (; p != pend; p++) {
-        crc = crc16_ccitt(crc, *p);
+	const uint8_t *p = (const uint8_t *)data;
+    while(length)
+    {
+    	length--;
+        crc = crc16_ccitt(crc, *(p + length));
     }
+
     return crc;
 }
 
 // Scan the EEPROM config. Returns true if the config is valid.
-bool isEEPROMContentValid(void)
+int isEEPROMContentValid(void)
 {
-    const uint8_t *p = &__config_start;
-    const configHeader_t *header = (const configHeader_t *)p;
+	int i;
+	uint8_t buff[4];
+	int err;
 
-    if (header->format != EEPROM_CONF_VERSION) {
-        return false;
+    config_streamer_t streamer;
+    config_streamer_init(&streamer);
+
+    config_streamer_read_start(&streamer, 0x00, EEPROM_PAGE_SIZE);
+	configHeader_t header;
+
+	err = config_streamer_read(&streamer, (uint8_t *)&header, sizeof(header));
+
+	if(err != 0)
+		return err;
+
+    if (header.format != PARAMETERS_VERSION) {
+        return EEPROM_ERROR_VERSION;
     }
-    uint16_t crc = updateCRC(0, header, sizeof(*header));
-    p += sizeof(*header);
+    uint16_t crc = updateCRC(0, &header, sizeof(header));
 
-    for (;;) {
-        const configRecord_t *record = (const configRecord_t *)p;
+	for(i=0; i<paramsTableLen; i++)
+	{
+		const setting_t *var = parametersTable[i];
 
-        if (record->size == 0) {
-            // Found the end.  Stop scanning.
-            break;
-        }
-        if (p + record->size >= &__config_end
-            || record->size < sizeof(*record)) {
-            // Too big or too small.
-            return false;
-        }
+		switch (SETTING_TYPE(var)) {
+		case VAR_UINT8:
+		case VAR_INT8:
+			err = config_streamer_read(&streamer, buff, 1);
+			crc = updateCRC(crc, buff, 1);
+			break;
 
-        crc = updateCRC(crc, p, record->size);
+		case VAR_UINT16:
+		case VAR_INT16:
+			err = config_streamer_read(&streamer, buff, 2);
+			crc = updateCRC(crc, buff, 2);
+			break;
 
-        p += record->size;
-    }
+		case VAR_UINT32:
+			err = config_streamer_read(&streamer, buff, 4);
+			crc = updateCRC(crc, buff, 4);
+			break;
 
-    const configFooter_t *footer = (const configFooter_t *)p;
-    crc = updateCRC(crc, footer, sizeof(*footer));
-    p += sizeof(*footer);
-    const uint16_t checkSum = *(uint16_t *)p;
-    p += sizeof(checkSum);
-    eepromConfigSize = p - &__config_start;
-    return crc == checkSum;
-}
+		case VAR_FLOAT:
+			err = config_streamer_read(&streamer, buff, 4);
+			crc = updateCRC(crc, buff, 4);
+			break;
 
-uint16_t getEEPROMConfigSize(void)
-{
-    return eepromConfigSize;
-}
+		case VAR_STRING:
+			// Not supported
+			break;
+		}
+	}
 
-// find config record for reg + classification (profile info) in EEPROM
-// return NULL when record is not found
-// this function assumes that EEPROM content is valid
-static const configRecord_t *findEEPROM(const pgRegistry_t *reg, configRecordFlags_e classification)
-{
-    const uint8_t *p = &__config_start;
-    p += sizeof(configHeader_t);             // skip header
-    while (true) {
-        const configRecord_t *record = (const configRecord_t *)p;
-        if (record->size == 0
-            || p + record->size >= &__config_end
-            || record->size < sizeof(*record))
-            break;
-        if (pgN(reg) == record->pgn
-            && (record->flags & CR_CLASSIFICATION_MASK) == classification)
-            return record;
-        p += record->size;
-    }
-    // record not found
-    return NULL;
+	if(err != 0)
+		return err;
+
+    uint16_t checkSum;
+    err = config_streamer_read(&streamer, (uint8_t *)&checkSum, sizeof(checkSum));
+	if(err != 0)
+		return err;
+
+	if(crc != checkSum)
+		return EEPROM_ERROR_CRC;
+
+	return 0;
 }
 
 // Initialize all PG records from EEPROM.
 // This functions processes all PGs sequentially, scanning EEPROM for each one. This is suboptimal,
 //   but each PG is loaded/initialized exactly once and in defined order.
-bool loadEEPROM(void)
+int loadEEPROM(void)
 {
-    PG_FOREACH(reg) {
-        configRecordFlags_e cls_start, cls_end;
-        if (pgIsSystem(reg)) {
-            cls_start = CR_CLASSICATION_SYSTEM;
-            cls_end = CR_CLASSICATION_SYSTEM;
-        } else {
-            cls_start = CR_CLASSICATION_PROFILE1;
-            cls_end = CR_CLASSICATION_PROFILE_LAST;
-        }
-        for (configRecordFlags_e cls = cls_start; cls <= cls_end; cls++) {
-            int profileIndex = cls - cls_start;
-            const configRecord_t *rec = findEEPROM(reg, cls);
-            if (rec) {
-                // config from EEPROM is available, use it to initialize PG. pgLoad will handle version mismatch
-                pgLoad(reg, profileIndex, rec->pg, rec->size - offsetof(configRecord_t, pg), rec->version);
-            } else {
-                pgReset(reg, profileIndex);
-            }
-        }
-    }
-    return true;
-}
 
-static bool writeSettingsToEEPROM(void)
-{
+	uint8_t i;
+	int err;
+
+	/* TODO Mayby store all data in arrary then copy to config? */
+	err = isEEPROMContentValid();
+	if( err != 0)
+		return err;
+
     config_streamer_t streamer;
     config_streamer_init(&streamer);
 
-    config_streamer_start(&streamer, (uintptr_t)&__config_start, &__config_end - &__config_start);
+    config_streamer_read_start(&streamer, 0x00, EEPROM_PAGE_SIZE);
+	configHeader_t header;
 
-    configHeader_t header = {
-        .format = EEPROM_CONF_VERSION,
-    };
+	err = config_streamer_read(&streamer, (uint8_t *)&header, sizeof(header));
 
-    config_streamer_write(&streamer, (uint8_t *)&header, sizeof(header));
-    uint16_t crc = updateCRC(0, (uint8_t *)&header, sizeof(header));
-    PG_FOREACH(reg) {
-        const uint16_t regSize = pgSize(reg);
-        configRecord_t record = {
-            .size = sizeof(configRecord_t) + regSize,
-            .pgn = pgN(reg),
-            .version = pgVersion(reg),
-            .flags = 0
-        };
+	if(err != 0)
+		return err;
 
-        if (pgIsSystem(reg)) {
-            // write the only instance
-            record.flags |= CR_CLASSICATION_SYSTEM;
-            config_streamer_write(&streamer, (uint8_t *)&record, sizeof(record));
-            crc = updateCRC(crc, (uint8_t *)&record, sizeof(record));
-            config_streamer_write(&streamer, reg->address, regSize);
-            crc = updateCRC(crc, reg->address, regSize);
-        } else {
-            // write one instance for each profile
-            for (uint8_t profileIndex = 0; profileIndex < MAX_PROFILE_COUNT; profileIndex++) {
-                record.flags = 0;
-
-                record.flags |= ((profileIndex + 1) & CR_CLASSIFICATION_MASK);
-                config_streamer_write(&streamer, (uint8_t *)&record, sizeof(record));
-                crc = updateCRC(crc, (uint8_t *)&record, sizeof(record));
-                const uint8_t *address = reg->address + (regSize * profileIndex);
-                config_streamer_write(&streamer, address, regSize);
-                crc = updateCRC(crc, address, regSize);
-            }
-        }
+    if (header.format != PARAMETERS_VERSION) {
+        return EEPROM_ERROR_VERSION;
     }
 
-    configFooter_t footer = {
-        .terminator = 0,
-    };
 
-    config_streamer_write(&streamer, (uint8_t *)&footer, sizeof(footer));
-    crc = updateCRC(crc, (uint8_t *)&footer, sizeof(footer));
+    uint16_t crc = updateCRC(0, &header, sizeof(header));
 
-    // append checksum now
-    config_streamer_write(&streamer, (uint8_t *)&crc, sizeof(crc));
+	for(i=0; i<paramsTableLen; i++)
+	{
+		const setting_t *var = parametersTable[i];
+		void *ptr = settingGetValuePointer(var);
+		int_float_value_t value;
+		value.int_value = 0;
 
-    config_streamer_flush(&streamer);
+		switch (SETTING_TYPE(var)) {
+		case VAR_UINT8:
+		case VAR_INT8:
+			err = config_streamer_read(&streamer, value.b, 1);
+			crc = updateCRC(crc, value.b, 1);
+			*(int8_t *)ptr = value.int_value;
+			break;
 
-    bool success = config_streamer_finish(&streamer) == 0;
+		case VAR_UINT16:
+		case VAR_INT16:
+			err = config_streamer_read(&streamer, value.b, 2);
+			crc = updateCRC(crc, value.b, 2);
+			*(int16_t *)ptr = value.int_value;
+			break;
 
-    return success;
+		case VAR_UINT32:
+			err = config_streamer_read(&streamer, value.b, 4);
+			crc = updateCRC(crc, value.b, 4);
+			*(uint32_t *)ptr = value.uint_value;
+			break;
+
+		case VAR_FLOAT:
+			err = config_streamer_read(&streamer, value.b, 4);
+			crc = updateCRC(crc, value.b, 4);
+			*(float *)ptr = (float)value.float_value;
+			break;
+
+		case VAR_STRING:
+			// Not supported
+			break;
+		}
+	}
+
+	if(err != 0)
+		return err;
+
+    uint16_t checkSum;
+    err = config_streamer_read(&streamer, (uint8_t *)&checkSum, sizeof(checkSum));
+	if(err != 0)
+		return err;
+
+	if(crc != checkSum)
+		return EEPROM_ERROR_CRC;
+
+	return 0;
 }
 
-void writeConfigToEEPROM(void)
+static int writeSettingsToEEPROM(void)
+{
+	uint16_t i;
+	int err;
+
+    config_streamer_t streamer;
+    config_streamer_init(&streamer);
+
+    config_streamer_write_start(&streamer, 0x00, EEPROM_PAGE_SIZE);
+
+    configHeader_t header = {
+        .format = PARAMETERS_VERSION,
+    };
+
+    err = config_streamer_write(&streamer, (uint8_t *)&header, sizeof(header));
+
+	if(err != 0)
+		return err;
+
+    uint16_t crc = updateCRC(0, (uint8_t *)&header, sizeof(header));
+    for(i=0; i<paramsTableLen; i++)
+    {
+    	const setting_t *var = parametersTable[i];
+
+	    switch (SETTING_TYPE(var)) {
+	    case VAR_UINT8:
+	    case VAR_INT8:
+	    	err = config_streamer_write(&streamer, (uint8_t *)var->parameterPointer, 1);
+	    	crc = updateCRC(crc, (uint8_t *)var->parameterPointer, 1);
+	        break;
+
+	    case VAR_UINT16:
+	    case VAR_INT16:
+	    	err = config_streamer_write(&streamer, (uint8_t *)var->parameterPointer, 2);
+	    	crc = updateCRC(crc, (uint8_t *)var->parameterPointer, 2);
+	        break;
+
+	    case VAR_UINT32:
+	    	err = config_streamer_write(&streamer, (uint8_t *)var->parameterPointer, 4);
+	    	crc = updateCRC(crc, (uint8_t *)var->parameterPointer, 4);
+	        break;
+
+	    case VAR_FLOAT:
+	    	err = config_streamer_write(&streamer, (uint8_t *)var->parameterPointer, 4);
+	    	crc = updateCRC(crc, (uint8_t *)var->parameterPointer, 4);
+	        break;
+
+	    case VAR_STRING:
+	        // Not supported
+	        break;
+	    }
+    }
+
+	if(err != 0)
+		return err;
+
+    // append checksum now
+    err = config_streamer_write(&streamer, (uint8_t *)&crc, sizeof(crc));
+	if(err != 0)
+		return err;
+
+    err = config_streamer_flush(&streamer);
+	if(err != 0)
+		return err;
+
+    return config_streamer_finish(&streamer);
+}
+
+int writeConfigToEEPROM(void)
 {
     bool success = false;
+    int err=0;
     // write it
     for (int attempt = 0; attempt < 3 && !success; attempt++) {
-        if (writeSettingsToEEPROM()) {
+    	err = writeSettingsToEEPROM();
+        if (err==0) {
             success = true;
         }
     }
+    if(err!=0)
+    	return err;
 
-    if (success && isEEPROMContentValid()) {
-        return;
-    }
+    err = isEEPROMContentValid();
+
+    return err;
 
     // Flash write failed - just die now
     //failureMode(FAILURE_FLASH_WRITE_FAILED);

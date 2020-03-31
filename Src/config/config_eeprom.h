@@ -21,9 +21,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define EEPROM_CONF_VERSION 126
+#define EEPROM_ERROR_CRC -7
+#define EEPROM_ERROR_VERSION -6
+#define EEPROM_ERROR_NO_MEMORY -4
+#define EEPROM_ERROR_END_MEMORY -5
 
-bool isEEPROMContentValid(void);
-bool loadEEPROM(void);
-void writeConfigToEEPROM(void);
+int isEEPROMContentValid(void);
+int loadEEPROM(void);
+int writeConfigToEEPROM(void);
 uint16_t getEEPROMConfigSize(void);

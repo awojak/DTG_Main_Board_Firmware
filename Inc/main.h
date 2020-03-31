@@ -38,7 +38,7 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
+extern I2C_HandleTypeDef hi2c3;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -167,7 +167,7 @@ void Error_Handler(void);
 //#define MAX_PROFILE_COUNT 3
 
 #define USE_I2C_EEPROM
-#define EEPROM_PAGE_SIZE 0x100
+#define EEPROM_PAGE_SIZE 0x80
 #define EEPROM_ADDR 0x50 //7 bits, without r/w bit
 #define I2C_SHIFTED_ADDR(addr) (addr<<1) //shift address to left, make space for w/r bit
 
