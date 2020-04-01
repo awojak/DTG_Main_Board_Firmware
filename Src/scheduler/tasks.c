@@ -32,17 +32,23 @@ char text[12] = {0};
 uint8_t flag = 1;
 
 MotionController MotionY = {
-		.back_down_limit_gpio_port = 0,
-		.back_down_limit_pin = 0,
-		.front_up_limit_gpio_port = 0,
-		.front_up_limit_pin = 0,
+		.back_down_limit_gpio_port = LIMIT_Y_BACK_GPIO_Port,
+		.back_down_limit_pin = LIMIT_Y_BACK_Pin,
+		.back_down_limit_active_state = 0,
+		.front_up_limit_gpio_port = LIMIT_Y_FRONT_GPIO_Port,
+		.front_up_limit_pin = LIMIT_Y_FRONT_Pin,
+		.front_up_limit_active_state = 0,
 		.dir_gpio_port = Y_DIR_GPIO_Port,
 		.dir_pin = Y_DIR_Pin,
 		.step_gpio_port = Y_STEP_GPIO_Port,
 		.step_pin = Y_STEP_Pin,
+		.forward_dir = CW,
 		.timer = &htim10,
 		.uart = &huart2,
 		.tmc_addr = 1,
+		.rampHome.speed = PARAMETER_HOME_SPEED_Y,
+		.rampHome.accel = PARAMETER_HOME_ACCEL_Y,
+		.rampHome.decel = PARAMETER_HOME_DECEL_Y,
 		.rampPrint.speed = PARAMETER_PRINT_SPEED_Y,
 		.rampPrint.accel = PARAMETER_PRINT_ACCEL_Y,
 		.rampPrint.decel = PARAMETER_PRINT_DECEL_Y,
@@ -52,6 +58,35 @@ MotionController MotionY = {
 		.rampMove.speed = PARAMETER_MOVE_SPEED_Y,
 		.rampMove.accel = PARAMETER_MOVE_ACCEL_Y,
 		.rampMove.decel = PARAMETER_MOVE_DECEL_Y
+};
+
+MotionController MotionZ = {
+		.back_down_limit_gpio_port = LIMIT_Z_DOWN_GPIO_Port,
+		.back_down_limit_pin = LIMIT_Z_DOWN_Pin,
+		.back_down_limit_active_state = 0,
+		.front_up_limit_gpio_port = LIMIT_Z_UP_GPIO_Port,
+		.front_up_limit_pin = LIMIT_Z_UP_Pin,
+		.front_up_limit_active_state = 0,
+		.dir_gpio_port = Z_DIR_GPIO_Port,
+		.dir_pin = Z_DIR_Pin,
+		.step_gpio_port = Z_STEP_GPIO_Port,
+		.step_pin = Z_STEP_Pin,
+		.forward_dir = CW,
+		.timer = &htim10, //todo zmienic
+		.uart = &huart2,
+		.tmc_addr = 0,
+		.rampHome.speed = PARAMETER_HOME_SPEED_Z,
+		.rampHome.accel = PARAMETER_HOME_ACCEL_Z,
+		.rampHome.decel = PARAMETER_HOME_DECEL_Z,
+		.rampPrint.speed = PARAMETER_PRINT_SPEED_Z,
+		.rampPrint.accel = PARAMETER_PRINT_ACCEL_Z,
+		.rampPrint.decel = PARAMETER_PRINT_DECEL_Z,
+		.rampJog.speed = PARAMETER_JOG_SPEED_Z,
+		.rampJog.accel = PARAMETER_JOG_ACCEL_Z,
+		.rampJog.decel = PARAMETER_JOG_DECEL_Z,
+		.rampMove.speed = PARAMETER_MOVE_SPEED_Z,
+		.rampMove.accel = PARAMETER_MOVE_ACCEL_Z,
+		.rampMove.decel = PARAMETER_MOVE_DECEL_Z
 };
 
 static void taskHandleUSBCommunication()

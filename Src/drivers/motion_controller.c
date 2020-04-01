@@ -11,6 +11,100 @@
 
 #include "../common/tools.h"
 
+
+static void SetCCW_DIR(MotionController *m)
+{
+    m->ramp_data.dir = CCW;
+    HAL_GPIO_WritePin(m->dir_gpio_port, m->dir_pin, GPIO_PIN_RESET);
+}
+
+static void SetCW_DIR(MotionController *m)
+{
+    m->ramp_data.dir = CW;
+    HAL_GPIO_WritePin(m->dir_gpio_port, m->dir_pin, GPIO_PIN_SET);
+}
+
+void MotionHome(MotionController *m)
+{
+	//! Number of steps before we hit max speed.
+	unsigned int max_s_lim;
+	//! Number of steps before we must start deceleration (if accel does not hit max speed).
+	//unsigned int accel_lim;
+
+	//Move to opposite direction
+	if(m->forward_dir == CW)
+		SetCCW_DIR(m);
+	else
+		SetCW_DIR(m);
+
+	// Refer to documentation for detailed information about these calculations.
+
+	// Set max speed limit, by calc min_delay to use in timer.
+	// min_delay = (alpha / tt)/ w
+	m->ramp_data.min_delay = (int)(A_T_x100 / m->rampHome.speed);
+
+	// Set accelration by calc the first (c0) step delay .
+	// step_delay = 1/tt * Sqrt(2*alpha/accel)
+	// step_delay = ( tfreq*0.676/100 )*100 * Sqrt( (2*alpha*10000000000) / (accel*100) )/10000
+	m->ramp_data.step_delay = (unsigned int)((T1_FREQ_148 * Sqrt(A_SQ / m->rampHome.accel))/100);
+
+	// Find out after how many steps does the speed hit the max speed limit.
+	// max_s_lim = speed^2 / (2*alpha*accel)
+	max_s_lim = (unsigned int)((long)m->rampHome.speed*m->rampHome.speed/(long)(((long)A_x20000*m->rampHome.accel)/100));
+	// If we hit max speed limit before 0,5 step it will round to 0.
+	// But in practice we need to move atleast 1 step to get any speed at all.
+	if(max_s_lim == 0){
+	  max_s_lim = 1;
+	}
+	//TODO not finished yet
+/*
+	// Find out after how many steps we must start deceleration.
+	// n1 = (n1+n2)decel / (accel + decel)
+	accel_lim = (unsigned int)(((long)step*decel) / (accel+decel));
+	// We must accelrate at least 1 step before we can start deceleration.
+	if(accel_lim == 0){
+	  accel_lim = 1;
+	}
+
+	// Use the limit we hit first to calc decel.
+	if(accel_lim <= max_s_lim){
+	  m->ramp_data.decel_val = (int)(accel_lim - step);
+	}
+	else{
+	  m->ramp_data.decel_val = -(int)(((long)max_s_lim*accel)/decel);
+	}
+	// We must decelrate at least 1 step to stop.
+	if(m->ramp_data.decel_val == 0){
+	  m->ramp_data.decel_val = -1;
+	}
+
+	// Find step to start decleration.
+	m->ramp_data.decel_start = (unsigned int)(step + m->ramp_data.decel_val);
+
+	// If the maximum speed is so low that we dont need to go via accelration state.
+	if(m->ramp_data.step_delay <= m->ramp_data.min_delay){
+	  m->ramp_data.step_delay = m->ramp_data.min_delay;
+	  m->ramp_data.run_state = RUN;
+	}
+	else{
+	  m->ramp_data.run_state = ACCEL;
+	}
+
+	// If the minimum speed is to low
+	if(m->ramp_data.step_delay >= 65536){
+	  m->ramp_data.step_delay = 65535;
+	}
+
+	// Reset counter.
+	m->ramp_data.accel_count = 0;
+	m->running = TRUE;
+
+	m->timer->Instance->ARR = 10;
+	// Run Timer
+	HAL_TIM_Base_Start_IT(m->timer);
+	*/
+}
+
 /*! \brief Move the stepper motor a given number of steps.
  *
  *  Makes the stepper motor move the given number of steps.
@@ -33,13 +127,11 @@ void MotionMoveSteps(MotionController *m, signed int step, unsigned int accel, u
 
   // Set direction from sign on step value.
   if(step < 0){
-    m->ramp_data.dir = CCW;
     step = -step;
-    HAL_GPIO_WritePin(m->dir_gpio_port, m->dir_pin, GPIO_PIN_RESET);
+    SetCCW_DIR(m);
   }
   else{
-    m->ramp_data.dir = CW;
-    HAL_GPIO_WritePin(m->dir_gpio_port, m->dir_pin, GPIO_PIN_SET);
+    SetCW_DIR(m);
   }
 
   // If moving only 1 step.
@@ -183,6 +275,7 @@ void MotionControllerInitialize(MotionController *m)
 	// Tells what part of speed ramp we are in
 	m->ramp_data.run_state = STOP;
 	m->running = FALSE;
+	m->homed = FALSE;
 
 	//UART communication fill first byte
 	//sync + reserved
@@ -220,9 +313,42 @@ void MotionControllerInitialize(MotionController *m)
 	specific motor current
 	- Set OTP options
 	 */
+
+	/* If everything go well */
+	m->initialized = TRUE;
 }
 
+//Check limit switches and emergency
+static inline void limit(MotionController *m)
+{
+	//TODO Emergency check global variable not pin
+	if((EMERGENCY_GPIO_Port->IDR & EMERGENCY_Pin) == (uint32_t) GPIO_PIN_SET)
+	{
+		m->ramp_data.run_state = STOP;
+		m->homed = FALSE;
+	}
 
+	if((m->back_down_limit_gpio_port->IDR & m->back_down_limit_pin) == (uint32_t)m->back_down_limit_active_state)
+	{
+		m->ramp_data.run_state = STOP;
+	}
+
+	if((m->front_up_limit_gpio_port->IDR & m->front_up_limit_pin) == (uint32_t)m->front_up_limit_active_state)
+	{
+		m->ramp_data.run_state = STOP;
+	}
+}
+
+static inline void step(MotionController *m, unsigned int *step_count)
+{
+	//TODO remove hal library to increase speed
+	HAL_GPIO_TogglePin(m->step_gpio_port, m->step_pin);
+	(*step_count)++;
+	if(m->forward_dir==m->ramp_data.dir)
+		m->position++;
+	else
+		m->position--;
+}
 
 /*! \brief Motion Update execute in timer interrupt
  *
@@ -244,6 +370,9 @@ void MotionUpdate(MotionController *m)
   // Keep track of remainder from new_step-delay calculation to incrase accurancy
   static unsigned int rest = 0;
 
+  //check limit switch state and emergency state
+  limit(m);
+
   m->timer->Instance->ARR = m->ramp_data.step_delay;
 
   switch(m->ramp_data.run_state) {
@@ -256,9 +385,10 @@ void MotionUpdate(MotionController *m)
       break;
 
     case ACCEL:
-    	HAL_GPIO_TogglePin(m->step_gpio_port, m->step_pin);
+      step(m,&step_count);
+      //HAL_GPIO_TogglePin(m->step_gpio_port, m->step_pin);
       //sm_driver_StepCounter(m->ramp_data.dir);
-      step_count++;
+      //step_count++;
       m->ramp_data.accel_count++;
       new_step_delay = (unsigned int)(m->ramp_data.step_delay - (((2 * (long)m->ramp_data.step_delay) + rest)/(4 * m->ramp_data.accel_count + 1)));
       rest = (unsigned int)(((2 * (long)m->ramp_data.step_delay)+rest)%(4 * m->ramp_data.accel_count + 1));
@@ -278,9 +408,10 @@ void MotionUpdate(MotionController *m)
       break;
 
     case RUN:
-    	HAL_GPIO_TogglePin(m->step_gpio_port, m->step_pin);
+      step(m,&step_count);
+      //HAL_GPIO_TogglePin(m->step_gpio_port, m->step_pin);
       //sm_driver_StepCounter(m->ramp_data.dir);
-      step_count++;
+      //step_count++;
       new_step_delay = m->ramp_data.min_delay;
       // Chech if we should start decelration.
       if(step_count >= m->ramp_data.decel_start) {
@@ -292,9 +423,10 @@ void MotionUpdate(MotionController *m)
       break;
 
     case DECEL:
-    	HAL_GPIO_TogglePin(m->step_gpio_port, m->step_pin);
+      step(m,&step_count);
+      //HAL_GPIO_TogglePin(m->step_gpio_port, m->step_pin);
       //sm_driver_StepCounter(m->ramp_data.dir);
-      step_count++;
+      //step_count++;
       m->ramp_data.accel_count++;
       new_step_delay = (unsigned int)( m->ramp_data.step_delay - (int)(((2 * (long)m->ramp_data.step_delay) + (long)rest)/(4 * m->ramp_data.accel_count + 1)));
       rest = (unsigned int)(((2 * (long)m->ramp_data.step_delay)+(long)rest)%(4 * m->ramp_data.accel_count + 1));

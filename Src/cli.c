@@ -398,12 +398,12 @@ static const char *checkCommand(const char *cmdLine, const char *command)
     }
 }
 */
-static void cliReboot(void)
-{
-    cliPrint("\r\nRebooting");
-    bufWriterFlush(cliWriter);
-    //waitForSerialPortToFinishTransmitting(cliPort);
-}
+//static void cliReboot(void)
+//{
+//    cliPrint("\r\nRebooting");
+//    bufWriterFlush(cliWriter);
+//    //waitForSerialPortToFinishTransmitting(cliPort);
+//}
 
 static void cliExit(char *cmdline)
 {

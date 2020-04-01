@@ -77,15 +77,34 @@ typedef struct{
 	rampParameters rampPrint;
 	rampParameters rampJog;
 	rampParameters rampMove;
+	rampParameters rampHome;
 
 	//! Contains data used by timer interrupt to calculate speed profile.
 	speedRampData ramp_data;
 
-	//! Actual position of the axis
+	//! Actual position of the axis, set during homing
 	int position;
+
+	//! min position of the axis, obtained during homing
+	int min_position;
+
+	//! max position of the axis, obtained during homing
+	int max_position;
+
+	//! default active state for limit switch 0- low, 1- high
+	uint8_t back_down_limit_active_state : 1;
+
+	//! default active state for limit switch 0- low, 1- high
+	uint8_t front_up_limit_active_state : 1;
+
+	//! Direction forward move.
+	unsigned char forward_dir : 1;
 
 	//! True when stepper motor is running.
 	uint8_t running:1;
+
+	//! True if homed successfully
+	uint8_t homed:1;
 
 	//! True if initialized successfully
 	uint8_t initialized:1;
