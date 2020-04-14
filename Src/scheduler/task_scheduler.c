@@ -163,14 +163,42 @@ TaskCreateState TaskCreate(SchedulerTasks* sts, Task *t, void *fun_ptr, unsigned
 	}
 }
 
+unsigned int GetTicks()
+{
+	return tick;
+}
+
 /**
- * Start task
+ * Start task once after delay
  */
-void TaskStart(Task* t, int period)
+void TaskStartOnceDelay(Task* t, unsigned int delay)
+{
+	t->active = TaskActive;
+	t->repeatedly = 0;
+	t->next_exe = tick + delay;
+	t->period = 0;
+}
+
+/**
+ * Start task once normal with priority
+ */
+void TaskStartOnce(Task* t)
+{
+	t->active = TaskActive;
+	t->repeatedly = 0;
+	t->next_exe = 0;
+	t->period = 0;
+}
+
+/**
+ * Start task repeatedly
+ */
+void TaskStartRepeatedly(Task* t, int period)
 {
 	//TODO check if task exist and is added to scheduler
 	t->active = TaskActive;
 	t->period = period;
+	t->repeatedly = 1;
 	t->next_exe = 0;
 }
 
@@ -227,8 +255,13 @@ void Scheduler(SchedulerTasks* sts)
 
 					if((tick >= sts->tasks[j]->next_exe) && (sts->tasks[j]->period>=0))
 					{
-						//Save next execution
-						sts->tasks[j]->next_exe = tick + sts->tasks[j]->period;
+						if(sts->tasks[j]->repeatedly)
+						{
+							//Save next execution
+							sts->tasks[j]->next_exe = tick + sts->tasks[j]->period;
+						} else {
+							sts->tasks[j]->active = TaskInactive;
+						}
 						//Do task
 						sts->tasks[j]->fun_ptr();
 					}
@@ -254,8 +287,13 @@ void Scheduler(SchedulerTasks* sts)
 
 			if((tick >= sts->tasks[i]->next_exe) && (sts->tasks[i]->period>=0))
 			{
-				//Save next execution
-				sts->tasks[i]->next_exe = tick + sts->tasks[i]->period;
+				if(sts->tasks[i]->repeatedly)
+				{
+					//Save next execution
+					sts->tasks[i]->next_exe = tick + sts->tasks[i]->period;
+				} else {
+					sts->tasks[i]->active = TaskInactive;
+				}
 				//Do task
 				sts->tasks[i]->fun_ptr();
 			}

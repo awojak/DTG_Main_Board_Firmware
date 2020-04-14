@@ -25,7 +25,7 @@ serialPort_t *serialPort = NULL;
 SchedulerTasks stsTasks;
 Task tHandleUSBCommunication;
 
-Task tLedTask, tSendPos;
+Task tLedTask, tSendPos, tMotionHome;
 Task tCore;
 
 char text[12] = {0};
@@ -57,7 +57,9 @@ MotionController MotionY = {
 		.rampJog.decel = PARAMETER_JOG_DECEL_Y,
 		.rampMove.speed = PARAMETER_MOVE_SPEED_Y,
 		.rampMove.accel = PARAMETER_MOVE_ACCEL_Y,
-		.rampMove.decel = PARAMETER_MOVE_DECEL_Y
+		.rampMove.decel = PARAMETER_MOVE_DECEL_Y,
+		.home_timeout = 10000,
+		.standby_position = 10000
 };
 
 MotionController MotionZ = {
@@ -86,7 +88,9 @@ MotionController MotionZ = {
 		.rampJog.decel = PARAMETER_JOG_DECEL_Z,
 		.rampMove.speed = PARAMETER_MOVE_SPEED_Z,
 		.rampMove.accel = PARAMETER_MOVE_ACCEL_Z,
-		.rampMove.decel = PARAMETER_MOVE_DECEL_Z
+		.rampMove.decel = PARAMETER_MOVE_DECEL_Z,
+		.home_timeout = 10000,
+		.standby_position = 10000
 };
 
 static void taskHandleUSBCommunication()
@@ -111,6 +115,12 @@ static void taskHandleUSBCommunication()
 
     // Allow MSP processing even if in CLI mode
     //mspSerialProcess(ARMING_FLAG(ARMED) ? MSP_SKIP_NON_MSP_DATA : MSP_EVALUATE_NON_MSP_DATA, mspFcProcessCommand);
+}
+
+void motionHome()
+{
+	//Just for the test
+	MotionHome(&MotionY,&tMotionHome);
 }
 
 /**
@@ -162,13 +172,15 @@ void tasksInitialize()
 	serialPort = usbVcpOpen();
 
 	TaskCreate(&stsTasks, &tLedTask, &led, 255);
-	TaskStart(&tLedTask, 500);
+	TaskStartRepeatedly(&tLedTask, 500);
 
 	TaskCreate(&stsTasks, &tCore, &Core, 5);
-	TaskStart(&tCore, 2000);
+	//TaskStartRepeatedly(&tCore, 2000);
 
 	TaskCreate(&stsTasks, &tHandleUSBCommunication, &taskHandleUSBCommunication, 10);
-	TaskStart(&tHandleUSBCommunication, 10);
+	TaskStartRepeatedly(&tHandleUSBCommunication, 10);
+
+	TaskCreate(&stsTasks, &tMotionHome, &motionHome, 100);
 
 	MotionControllerInitialize(&MotionY);
 

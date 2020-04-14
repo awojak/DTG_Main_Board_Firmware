@@ -9,6 +9,7 @@
 #define MOTION_CONTROLLER_H_
 
 #include "main.h"
+#include "../scheduler/task_scheduler.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -85,11 +86,17 @@ typedef struct{
 	//! Actual position of the axis, set during homing
 	int position;
 
+	//! Actual position of the axis, set during homing
+	int standby_position;
+
 	//! min position of the axis, obtained during homing
 	int min_position;
 
 	//! max position of the axis, obtained during homing
 	int max_position;
+
+	//! Timeout during home
+	uint32_t home_timeout;
 
 	//! default active state for limit switch 0- low, 1- high
 	uint8_t back_down_limit_active_state : 1;
@@ -148,12 +155,13 @@ typedef struct{
 void MotionControllerInitialize(MotionController *m);
 
 void MotionJogSteps(MotionController *m, signed int steps);
-void MotionMove(MotionController *m, int dir);
+void MotionMove(MotionController *m, uint8_t dir, unsigned int accel, unsigned int speed);
 void MotionMovePos(MotionController *m, int pos);
 
 void MotionMoveSteps(MotionController *m, signed int step, unsigned int accel, unsigned int decel, unsigned int speed);
-void MotionMoveSpeed(MotionController *m, unsigned char dir, unsigned int accel, unsigned int speed);
+void MotionMoveSpeed(MotionController *m, unsigned char dir);
 void MotionMoveStop(MotionController *m, unsigned char mode, unsigned int decel);
 void MotionUpdate(MotionController *m);
+void MotionHome(MotionController *m, Task* t);
 
 #endif /* MOTION_CONTROLLER_H_ */

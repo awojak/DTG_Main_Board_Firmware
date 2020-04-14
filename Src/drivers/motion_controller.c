@@ -9,6 +9,8 @@
 
 #include "tmc2209.h"
 
+#include "../scheduler/task_scheduler.h"
+
 #include "../common/tools.h"
 
 
@@ -24,85 +26,74 @@ static void SetCW_DIR(MotionController *m)
     HAL_GPIO_WritePin(m->dir_gpio_port, m->dir_pin, GPIO_PIN_SET);
 }
 
-void MotionHome(MotionController *m)
+/**
+ * Require to execute every 50ms for better performance
+ */
+void MotionProcess(MotionController *m)
 {
-	//! Number of steps before we hit max speed.
-	unsigned int max_s_lim;
-	//! Number of steps before we must start deceleration (if accel does not hit max speed).
-	//unsigned int accel_lim;
+	//Check Errors, Problem, State, Position etc
+	//Check TMC2209 state
 
-	//Move to opposite direction
-	if(m->forward_dir == CW)
-		SetCCW_DIR(m);
-	else
-		SetCW_DIR(m);
+	//Home part
+	//TODO Move home part here
+}
 
-	// Refer to documentation for detailed information about these calculations.
+/**
+ *	Motion Home, scheduler version
+ */
 
-	// Set max speed limit, by calc min_delay to use in timer.
-	// min_delay = (alpha / tt)/ w
-	m->ramp_data.min_delay = (int)(A_T_x100 / m->rampHome.speed);
+void MotionHome(MotionController *m, Task* t)
+{
+	static uint8_t func_state = 0;
+	static uint32_t timeout = 0;
+	uint8_t dir;
 
-	// Set accelration by calc the first (c0) step delay .
-	// step_delay = 1/tt * Sqrt(2*alpha/accel)
-	// step_delay = ( tfreq*0.676/100 )*100 * Sqrt( (2*alpha*10000000000) / (accel*100) )/10000
-	m->ramp_data.step_delay = (unsigned int)((T1_FREQ_148 * Sqrt(A_SQ / m->rampHome.accel))/100);
+	if(func_state == 0)
+	{
+		if(m->forward_dir==CW)
+			dir=CCW;
+		else
+			dir=CW;
 
-	// Find out after how many steps does the speed hit the max speed limit.
-	// max_s_lim = speed^2 / (2*alpha*accel)
-	max_s_lim = (unsigned int)((long)m->rampHome.speed*m->rampHome.speed/(long)(((long)A_x20000*m->rampHome.accel)/100));
-	// If we hit max speed limit before 0,5 step it will round to 0.
-	// But in practice we need to move atleast 1 step to get any speed at all.
-	if(max_s_lim == 0){
-	  max_s_lim = 1;
+		//TODO check if limit switch is already not connected
+
+		//Move in opposite direction to forward direction at constant speed
+		MotionMove(m, dir,m->rampHome.accel, m->rampHome.speed);
+		func_state = 1;
+		timeout = GetTicks();
+		//next step
 	}
-	//TODO not finished yet
-/*
-	// Find out after how many steps we must start deceleration.
-	// n1 = (n1+n2)decel / (accel + decel)
-	accel_lim = (unsigned int)(((long)step*decel) / (accel+decel));
-	// We must accelrate at least 1 step before we can start deceleration.
-	if(accel_lim == 0){
-	  accel_lim = 1;
-	}
+	if(func_state == 1)
+	{
+		if(m->ramp_data.run_state == STOP)
+		{
+			if((m->back_down_limit_gpio_port->IDR & m->back_down_limit_pin) == (uint32_t)m->back_down_limit_active_state)
+			{
+				//Set current position to 0
+				m->position = 0;
+				//TODO min and max position
+				m->min_position = 1000;
+				m->max_position = 10000000;
+				m->homed  = 1;
+				//Already at limit switch,
+				func_state = 0;
+				//Go to standby position
+				MotionMovePos(m, m->standby_position);
 
-	// Use the limit we hit first to calc decel.
-	if(accel_lim <= max_s_lim){
-	  m->ramp_data.decel_val = (int)(accel_lim - step);
+			} else {
+				//Error
+			}
+		} else {
+			if(GetTicks() - timeout >= m->home_timeout)
+			{
+				//TODO Error timeout
+				func_state = 0;
+			} else {
+				//Check every 50ms
+				TaskStartOnceDelay(t, 50);
+			}
+		}
 	}
-	else{
-	  m->ramp_data.decel_val = -(int)(((long)max_s_lim*accel)/decel);
-	}
-	// We must decelrate at least 1 step to stop.
-	if(m->ramp_data.decel_val == 0){
-	  m->ramp_data.decel_val = -1;
-	}
-
-	// Find step to start decleration.
-	m->ramp_data.decel_start = (unsigned int)(step + m->ramp_data.decel_val);
-
-	// If the maximum speed is so low that we dont need to go via accelration state.
-	if(m->ramp_data.step_delay <= m->ramp_data.min_delay){
-	  m->ramp_data.step_delay = m->ramp_data.min_delay;
-	  m->ramp_data.run_state = RUN;
-	}
-	else{
-	  m->ramp_data.run_state = ACCEL;
-	}
-
-	// If the minimum speed is to low
-	if(m->ramp_data.step_delay >= 65536){
-	  m->ramp_data.step_delay = 65535;
-	}
-
-	// Reset counter.
-	m->ramp_data.accel_count = 0;
-	m->running = TRUE;
-
-	m->timer->Instance->ARR = 10;
-	// Run Timer
-	HAL_TIM_Base_Start_IT(m->timer);
-	*/
 }
 
 /*! \brief Move the stepper motor a given number of steps.
@@ -330,12 +321,14 @@ static inline void limit(MotionController *m)
 
 	if((m->back_down_limit_gpio_port->IDR & m->back_down_limit_pin) == (uint32_t)m->back_down_limit_active_state)
 	{
-		m->ramp_data.run_state = STOP;
+		if(m->ramp_data.dir != m->forward_dir)
+			m->ramp_data.run_state = STOP;
 	}
 
 	if((m->front_up_limit_gpio_port->IDR & m->front_up_limit_pin) == (uint32_t)m->front_up_limit_active_state)
 	{
-		m->ramp_data.run_state = STOP;
+		if(m->ramp_data.dir == m->forward_dir)
+			m->ramp_data.run_state = STOP;
 	}
 }
 
@@ -439,34 +432,96 @@ void MotionUpdate(MotionController *m)
   m->ramp_data.step_delay = new_step_delay;
 }
 
-/*! \brief Motion Move Speed
- *
- *  Move motor at constant speed, use acceleration at the beginning
- *  To stop motor use MotionMoveStop() function
- */
-void MotionMoveSpeed(MotionController *m, unsigned char dir, unsigned int accel, unsigned int speed)
-{
-
-}
-
 /*! \brief Motion Move Stop
  *
- *  Stop motor, use deceleration or stop immediately
+ *  Stop motor, use deceleration 0 or stop immediately 1
  *  Mode determines the behavior
  */
 void MotionMoveStop(MotionController *m, unsigned char mode, unsigned int decel)
 {
-
+	if(mode)
+	{
+		m->ramp_data.run_state = STOP;
+	} else {
+		//TODO configure DECEL before go to DECEL state
+	    m->ramp_data.run_state = DECEL;
+	}
 }
 
 void MotionJogSteps(MotionController *m, signed int steps)
 {
 	MotionMoveSteps(m, steps, m->rampJog.accel, m->rampJog.decel, m->rampJog.speed);
 }
-void MotionMove(MotionController *m, int dir)
-{
 
+void MotionMove(MotionController *m, uint8_t dir, unsigned int accel, unsigned int speed)
+{
+	//! Number of steps before we hit max speed.
+	unsigned int max_s_lim;
+
+	if(dir == CW)
+		SetCW_DIR(m);
+	else
+		SetCCW_DIR(m);
+
+	// Refer to documentation for detailed information about these calculations.
+
+	// Set max speed limit, by calc min_delay to use in timer.
+	// min_delay = (alpha / tt)/ w
+	m->ramp_data.min_delay = (int)(A_T_x100 / speed);
+
+	// Set accelration by calc the first (c0) step delay .
+	// step_delay = 1/tt * Sqrt(2*alpha/accel)
+	// step_delay = ( tfreq*0.676/100 )*100 * Sqrt( (2*alpha*10000000000) / (accel*100) )/10000
+	m->ramp_data.step_delay = (unsigned int)((T1_FREQ_148 * Sqrt(A_SQ / accel))/100);
+
+	// Find out after how many steps does the speed hit the max speed limit.
+	// max_s_lim = speed^2 / (2*alpha*accel)
+	max_s_lim = (unsigned int)((long)speed*speed/(long)(((long)A_x20000*accel)/100));
+	// If we hit max speed limit before 0,5 step it will round to 0.
+	// But in practice we need to move atleast 1 step to get any speed at all.
+	if(max_s_lim == 0){
+	  max_s_lim = 1;
+	}
+
+	//Just for compatibility
+	m->ramp_data.decel_val = -1;
+
+	//No deceleration state
+	m->ramp_data.decel_start = 0xFFFFFFFF;
+
+	// If the maximum speed is so low that we dont need to go via accelration state.
+	if(m->ramp_data.step_delay <= m->ramp_data.min_delay){
+	  m->ramp_data.step_delay = m->ramp_data.min_delay;
+	  m->ramp_data.run_state = RUN;
+	}
+	else{
+	  m->ramp_data.run_state = ACCEL;
+	}
+
+	// If the minimum speed is to low
+	if(m->ramp_data.step_delay >= 65536){
+	  m->ramp_data.step_delay = 65535;
+	}
+
+	// Reset counter.
+	m->ramp_data.accel_count = 0;
+	m->running = TRUE;
+
+	m->timer->Instance->ARR = 10;
+	// Run Timer
+	HAL_TIM_Base_Start_IT(m->timer);
 }
+
+/*! \brief Motion Move Speed
+ *
+ *  Move motor at constant speed, use acceleration at the beginning
+ *  To stop motor use MotionMoveStop() function
+ */
+void MotionMoveSpeed(MotionController *m, unsigned char dir)
+{
+	MotionMove(m, dir, m->rampMove.accel, m->rampMove.speed);
+}
+
 void MotionMovePos(MotionController *m, int pos)
 {
 	MotionMoveSteps(m, pos - m->position, m->rampMove.accel, m->rampMove.decel, m->rampMove.speed);
