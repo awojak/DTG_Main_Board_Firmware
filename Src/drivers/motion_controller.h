@@ -10,9 +10,7 @@
 
 #include "main.h"
 #include "../scheduler/task_scheduler.h"
-
-#define TRUE 1
-#define FALSE 0
+#include "../scheduler/semaphore.h"
 
 /*! \brief Holding data used by timer interrupt for speed ramp calculation.
  *
@@ -65,6 +63,10 @@ typedef struct{
 	GPIO_TypeDef *step_gpio_port;
 	uint16_t step_pin;
 
+	//! ENable signal, should be configured as output
+	GPIO_TypeDef *enable_gpio_port;
+	uint16_t enable_pin;
+
 	//! Handler for timer instance, use to generate interrupt, should be stopped and configured as up counting with interrupt
 	TIM_HandleTypeDef *timer;
 
@@ -98,11 +100,18 @@ typedef struct{
 	//! Timeout during home
 	uint32_t home_timeout;
 
-	//! default active state for limit switch 0- low, 1- high
-	uint8_t back_down_limit_active_state : 1;
+	//! Homing semaphore
+	Semaphore sem_home;
 
-	//! default active state for limit switch 0- low, 1- high
-	uint8_t front_up_limit_active_state : 1;
+	uint8_t enable_state : 1;
+	//! default active level for enable pin 0- low, 1- high
+	uint8_t enable_active_level : 1;
+
+	//! default active level for limit switch 0- low, 1- high
+	uint8_t back_down_limit_active_level : 1;
+
+	//! default active level for limit switch 0- low, 1- high
+	uint8_t front_up_limit_active_level : 1;
 
 	//! Direction forward move.
 	unsigned char forward_dir : 1;
@@ -153,6 +162,11 @@ typedef struct{
 #define RUN   3
 
 void MotionControllerInitialize(MotionController *m);
+void MotionDisable(MotionController *m);
+void MotionEnable(MotionController *m);
+uint8_t isMotionEnable(MotionController *m);
+uint8_t isHomed(MotionController *m);
+uint8_t checkErrors(MotionController *m);
 
 void MotionJogSteps(MotionController *m, signed int steps);
 void MotionMove(MotionController *m, uint8_t dir, unsigned int accel, unsigned int speed);
@@ -162,6 +176,7 @@ void MotionMoveSteps(MotionController *m, signed int step, unsigned int accel, u
 void MotionMoveSpeed(MotionController *m, unsigned char dir);
 void MotionMoveStop(MotionController *m, unsigned char mode, unsigned int decel);
 void MotionUpdate(MotionController *m);
-void MotionHome(MotionController *m, Task* t);
+void MotionHome(MotionController *m);
+void MotionProcess(MotionController *m);
 
 #endif /* MOTION_CONTROLLER_H_ */

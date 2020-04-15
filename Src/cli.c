@@ -29,16 +29,20 @@
 #include "common/typeconversion.h"
 
 #include "drivers/serial.h"
+#include "drivers/motion_controller.h"
 #include "config/config_eeprom.h"
 
 #include "main.h"
 #include "cli.h"
 #include "settings.h"
 #include "parameters.h"
+#include "printer.h"
 
 #include "scheduler/task_scheduler.h"
 
-extern Task tMotionHome;
+extern MotionController MotionY;
+extern MotionController MotionZ;
+extern tPrinter Printer;
 
 uint8_t cliMode = 0;
 static serialPort_t *cliPort;
@@ -605,10 +609,10 @@ static void cliHome(char *cmdline)
     //len = strlen(cmdline);
 
     if (cmdline[0] == 'Y') {
-    	TaskStartOnce(&tMotionHome);
+    	MotionHome(&MotionY);
     }
     else if(cmdline[0] == 'Z') {
-
+    	MotionHome(&MotionZ);
     } else {
     	cliPrintLine("Arguments Y or Z");
     }
@@ -675,6 +679,11 @@ static void cliSave(char *cmdline)
     }
     //cliReboot();
 }
+static void cliPrinterInitialize(char *cmdline)
+{
+	UNUSED(cmdline);
+	PrinterInitialize(&Printer);
+}
 
 static void cliDefaults(char *cmdline)
 {
@@ -717,6 +726,7 @@ const clicmd_t cmdTable[] = {
     CLI_COMMAND_DEF("get", "get variable value", "[name]", cliGet),
     CLI_COMMAND_DEF("help", NULL, NULL, cliHelp),
 	CLI_COMMAND_DEF("home", "home axis", NULL, cliHome),
+	CLI_COMMAND_DEF("init", "initialize printer", NULL, cliPrinterInitialize),
 	CLI_COMMAND_DEF("load", "load settings from EEPROM", NULL, cliLoad),
     CLI_COMMAND_DEF("save", "save and reboot", NULL, cliSave),
     CLI_COMMAND_DEF("set", "change setting", "[<name>=<value>]", cliSet),

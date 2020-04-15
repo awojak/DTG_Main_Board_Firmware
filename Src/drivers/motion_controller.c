@@ -13,6 +13,16 @@
 
 #include "../common/tools.h"
 
+uint8_t isHomed(MotionController *m)
+{
+	return m->homed;
+}
+uint8_t checkErrors(MotionController *m)
+{
+	//TODO return errors
+	return 0;
+}
+
 
 static void SetCCW_DIR(MotionController *m)
 {
@@ -35,48 +45,18 @@ void MotionProcess(MotionController *m)
 	//Check TMC2209 state
 
 	//Home part
-	//TODO Move home part here
-}
-
-/**
- *	Motion Home, scheduler version
- */
-
-void MotionHome(MotionController *m, Task* t)
-{
-	static uint8_t func_state = 0;
-	static uint32_t timeout = 0;
-	uint8_t dir;
-
-	if(func_state == 0)
-	{
-		if(m->forward_dir==CW)
-			dir=CCW;
-		else
-			dir=CW;
-
-		//TODO check if limit switch is already not connected
-
-		//Move in opposite direction to forward direction at constant speed
-		MotionMove(m, dir,m->rampHome.accel, m->rampHome.speed);
-		func_state = 1;
-		timeout = GetTicks();
-		//next step
-	}
-	if(func_state == 1)
+	if(SemCheck(&m->sem_home))
 	{
 		if(m->ramp_data.run_state == STOP)
 		{
-			if((m->back_down_limit_gpio_port->IDR & m->back_down_limit_pin) == (uint32_t)m->back_down_limit_active_state)
+			//Check if Limit Switch is active
+			if((m->back_down_limit_gpio_port->IDR & m->back_down_limit_pin) == (uint32_t)m->back_down_limit_active_level)
 			{
 				//Set current position to 0
 				m->position = 0;
-				//TODO min and max position
-				m->min_position = 1000;
-				m->max_position = 10000000;
 				m->homed  = 1;
 				//Already at limit switch,
-				func_state = 0;
+				SemDeactivate(&m->sem_home);
 				//Go to standby position
 				MotionMovePos(m, m->standby_position);
 
@@ -84,16 +64,40 @@ void MotionHome(MotionController *m, Task* t)
 				//Error
 			}
 		} else {
-			if(GetTicks() - timeout >= m->home_timeout)
+			if(GetTicks() - SemGetTime(&m->sem_home) >= m->home_timeout)
 			{
 				//TODO Error timeout
-				func_state = 0;
-			} else {
-				//Check every 50ms
-				TaskStartOnceDelay(t, 50);
+				SemDeactivate(&m->sem_home);
+				MotionMoveStop(m, 1, 100);
 			}
 		}
 	}
+}
+
+/**
+ *	Motion Home, scheduler version
+ */
+
+void MotionHome(MotionController *m)
+{
+	uint8_t dir;
+	// Check if ready to Home
+	if(!m->initialized)
+		return;
+
+	if(m->forward_dir==CW)
+		dir=CCW;
+	else
+		dir=CW;
+	if(!isMotionEnable(m))
+		MotionEnable(m);
+	//Move in opposite direction to forward direction at constant speed
+	MotionMove(m, dir,m->rampHome.accel, m->rampHome.speed);
+
+	SemActivate(&m->sem_home, 0);
+	SemSetTime(&m->sem_home, GetTicks());
+
+	//Rest code will be executed in MotionProcess
 }
 
 /*! \brief Move the stepper motor a given number of steps.
@@ -115,6 +119,13 @@ void MotionMoveSteps(MotionController *m, signed int step, unsigned int accel, u
   unsigned int max_s_lim;
   //! Number of steps before we must start deceleration (if accel does not hit max speed).
   unsigned int accel_lim;
+
+  //TODO Check status
+	if(m->initialized == 0)
+		return ;
+
+	if(m->homed == 0)
+		return ;
 
   // Set direction from sign on step value.
   if(step < 0){
@@ -268,6 +279,11 @@ void MotionControllerInitialize(MotionController *m)
 	m->running = FALSE;
 	m->homed = FALSE;
 
+	//Initialize semaphore
+	SemDeactivate(&m->sem_home);
+
+	MotionDisable(m);
+
 	//UART communication fill first byte
 	//sync + reserved
 	m->uart_tx[0] = 0x65;
@@ -319,13 +335,13 @@ static inline void limit(MotionController *m)
 		m->homed = FALSE;
 	}
 
-	if((m->back_down_limit_gpio_port->IDR & m->back_down_limit_pin) == (uint32_t)m->back_down_limit_active_state)
+	if((m->back_down_limit_gpio_port->IDR & m->back_down_limit_pin) == (uint32_t)m->back_down_limit_active_level)
 	{
 		if(m->ramp_data.dir != m->forward_dir)
 			m->ramp_data.run_state = STOP;
 	}
 
-	if((m->front_up_limit_gpio_port->IDR & m->front_up_limit_pin) == (uint32_t)m->front_up_limit_active_state)
+	if((m->front_up_limit_gpio_port->IDR & m->front_up_limit_pin) == (uint32_t)m->front_up_limit_active_level)
 	{
 		if(m->ramp_data.dir == m->forward_dir)
 			m->ramp_data.run_state = STOP;
@@ -455,6 +471,9 @@ void MotionJogSteps(MotionController *m, signed int steps)
 
 void MotionMove(MotionController *m, uint8_t dir, unsigned int accel, unsigned int speed)
 {
+	if(m->initialized == 0)
+		return ;
+
 	//! Number of steps before we hit max speed.
 	unsigned int max_s_lim;
 
@@ -525,4 +544,40 @@ void MotionMoveSpeed(MotionController *m, unsigned char dir)
 void MotionMovePos(MotionController *m, int pos)
 {
 	MotionMoveSteps(m, pos - m->position, m->rampMove.accel, m->rampMove.decel, m->rampMove.speed);
+}
+
+void MotionDisable(MotionController *m)
+{
+	GPIO_PinState state;
+	if(m->enable_active_level)
+		state = GPIO_PIN_RESET;
+	else
+		state = GPIO_PIN_SET;
+
+	HAL_GPIO_WritePin(m->enable_gpio_port, m->enable_pin, state);
+
+	m->enable_state = 0;
+	m->homed = 0;
+
+	//TODO co dalej?
+}
+
+void MotionEnable(MotionController *m)
+{
+	GPIO_PinState state;
+
+	if(m->enable_active_level)
+		state = GPIO_PIN_SET;
+	else
+		state = GPIO_PIN_RESET;
+
+	HAL_GPIO_WritePin(m->enable_gpio_port, m->enable_pin, state);
+
+	m->enable_state = 1;
+	//TODO co dalej?
+}
+
+uint8_t isMotionEnable(MotionController *m)
+{
+	return m->enable_state;
 }

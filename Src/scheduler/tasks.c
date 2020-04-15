@@ -15,6 +15,7 @@
 #include "../drivers/eeprom.h"
 #include "../drivers/M24C0x.h"
 #include "../parameters.h"
+#include "../printer.h"
 
 extern UART_HandleTypeDef huart2;
 extern TIM_HandleTypeDef htim10;
@@ -25,7 +26,8 @@ serialPort_t *serialPort = NULL;
 SchedulerTasks stsTasks;
 Task tHandleUSBCommunication;
 
-Task tLedTask, tSendPos, tMotionHome;
+Task tPrinterProcess, tMotionProcess;
+Task tLedTask, tSendPos;
 Task tCore;
 
 char text[12] = {0};
@@ -34,10 +36,14 @@ uint8_t flag = 1;
 MotionController MotionY = {
 		.back_down_limit_gpio_port = LIMIT_Y_BACK_GPIO_Port,
 		.back_down_limit_pin = LIMIT_Y_BACK_Pin,
-		.back_down_limit_active_state = 0,
+		.back_down_limit_active_level = 0,
 		.front_up_limit_gpio_port = LIMIT_Y_FRONT_GPIO_Port,
 		.front_up_limit_pin = LIMIT_Y_FRONT_Pin,
-		.front_up_limit_active_state = 0,
+		.front_up_limit_active_level = 0,
+		.enable_gpio_port = Y_ENABLE_GPIO_Port,
+		.enable_pin = Y_ENABLE_Pin,
+		.enable_active_level = 0,
+		.enable_state = 0,
 		.dir_gpio_port = Y_DIR_GPIO_Port,
 		.dir_pin = Y_DIR_Pin,
 		.step_gpio_port = Y_STEP_GPIO_Port,
@@ -65,10 +71,14 @@ MotionController MotionY = {
 MotionController MotionZ = {
 		.back_down_limit_gpio_port = LIMIT_Z_DOWN_GPIO_Port,
 		.back_down_limit_pin = LIMIT_Z_DOWN_Pin,
-		.back_down_limit_active_state = 0,
+		.back_down_limit_active_level = 0,
 		.front_up_limit_gpio_port = LIMIT_Z_UP_GPIO_Port,
 		.front_up_limit_pin = LIMIT_Z_UP_Pin,
-		.front_up_limit_active_state = 0,
+		.front_up_limit_active_level = 0,
+		.enable_gpio_port = Z_ENABLE_GPIO_Port,
+		.enable_pin = Z_ENABLE_Pin,
+		.enable_active_level = 0,
+		.enable_state = 0,
 		.dir_gpio_port = Z_DIR_GPIO_Port,
 		.dir_pin = Z_DIR_Pin,
 		.step_gpio_port = Z_STEP_GPIO_Port,
@@ -91,6 +101,19 @@ MotionController MotionZ = {
 		.rampMove.decel = PARAMETER_MOVE_DECEL_Z,
 		.home_timeout = 10000,
 		.standby_position = 10000
+};
+
+tPrinter Printer = {
+		.emergency_gpio_port = EMERGENCY_GPIO_Port,
+		.emergency_pin = EMERGENCY_Pin,
+		.emergency_pin_active_level = 1,
+		.initilize_state = 0,
+		.emergency_state = 0,
+		.MotionY = &MotionY,
+		.MotionZ = &MotionZ,
+		.timeout_motion_z = 10000,
+		.timeout_motion_y = 10000,
+		.serwis_mode = 0
 };
 
 static void taskHandleUSBCommunication()
@@ -117,10 +140,15 @@ static void taskHandleUSBCommunication()
     //mspSerialProcess(ARMING_FLAG(ARMED) ? MSP_SKIP_NON_MSP_DATA : MSP_EVALUATE_NON_MSP_DATA, mspFcProcessCommand);
 }
 
-void motionHome()
+void taskMotionProcess()
 {
-	//Just for the test
-	MotionHome(&MotionY,&tMotionHome);
+	MotionProcess(&MotionZ);
+	MotionProcess(&MotionY);
+}
+
+void taskPrinterProcess()
+{
+	PrinterProcess(&Printer);
 }
 
 /**
@@ -174,17 +202,22 @@ void tasksInitialize()
 	TaskCreate(&stsTasks, &tLedTask, &led, 255);
 	TaskStartRepeatedly(&tLedTask, 500);
 
-	TaskCreate(&stsTasks, &tCore, &Core, 5);
+	//TaskCreate(&stsTasks, &tCore, &Core, 5);
 	//TaskStartRepeatedly(&tCore, 2000);
 
-	TaskCreate(&stsTasks, &tHandleUSBCommunication, &taskHandleUSBCommunication, 10);
+	TaskCreate(&stsTasks, &tHandleUSBCommunication, &taskHandleUSBCommunication, 50);
 	TaskStartRepeatedly(&tHandleUSBCommunication, 10);
 
-	TaskCreate(&stsTasks, &tMotionHome, &motionHome, 100);
+	TaskCreate(&stsTasks, &tMotionProcess, &taskMotionProcess, 10);
+	TaskStartRepeatedly(&tMotionProcess, 50);
+
+	TaskCreate(&stsTasks, &tPrinterProcess, &taskPrinterProcess, 15);
+	TaskStartRepeatedly(&tPrinterProcess, 50);
 
 	MotionControllerInitialize(&MotionY);
+	MotionControllerInitialize(&MotionZ);
 
-
+	PrinterInitialize(&Printer);
 }
 
 void tasksScheduler()

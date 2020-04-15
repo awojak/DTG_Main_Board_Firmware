@@ -166,6 +166,9 @@ void Error_Handler(void);
 /* USER CODE BEGIN Private defines */
 //#define MAX_PROFILE_COUNT 3
 
+#define TRUE 1
+#define FALSE 0
+
 #define USE_I2C_EEPROM
 #define EEPROM_PAGE_SIZE 0x80
 #define EEPROM_ADDR 0x50 //7 bits, without r/w bit
