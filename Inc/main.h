@@ -29,11 +29,10 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
-#include "stdbool.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "stdbool.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -89,6 +88,7 @@ void Error_Handler(void);
 #define DETECT_12V_GPIO_Port GPIOA
 #define EMERGENCY_Pin GPIO_PIN_4
 #define EMERGENCY_GPIO_Port GPIOA
+#define EMERGENCY_EXTI_IRQn EXTI4_IRQn
 #define PRINTER_POWER_DETECT_Pin GPIO_PIN_4
 #define PRINTER_POWER_DETECT_GPIO_Port GPIOC
 #define OPC1_SIGNAL_Pin GPIO_PIN_5
@@ -166,8 +166,8 @@ void Error_Handler(void);
 /* USER CODE BEGIN Private defines */
 //#define MAX_PROFILE_COUNT 3
 
-#define TRUE 1
-#define FALSE 0
+#define TRUE true
+#define FALSE false
 
 #define USE_I2C_EEPROM
 #define EEPROM_PAGE_SIZE 0x80

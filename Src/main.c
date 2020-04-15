@@ -525,7 +525,10 @@ static void MX_GPIO_Init(void)
                           |Z_STEP_Pin|Z_DIR_Pin|Y_STEP_Pin|Y_DIR_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, OUTPUT2_Pin|EEPROM_P_Pin|Z_ENABLE_Pin|Y_ENABLE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, OUTPUT2_Pin|EEPROM_P_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOD, Z_ENABLE_Pin|Y_ENABLE_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pins : LCD_DB6_Pin LCD_DB7_Pin LCD_E_Pin LED1_CONTROL_Pin 
                            LED2_CONTROL_Pin TABLE_COIL_Pin LCD_DB4_Pin LCD_DB5_Pin */
@@ -543,25 +546,25 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : INPUT2_Pin INPUT1_Pin LIMIT_Z_UP_Pin Z_INDEX_Pin 
-                           Z_DIAG_Pin */
-  GPIO_InitStruct.Pin = INPUT2_Pin|INPUT1_Pin|LIMIT_Z_UP_Pin|Z_INDEX_Pin 
-                          |Z_DIAG_Pin;
+  /*Configure GPIO pins : INPUT2_Pin INPUT1_Pin PRINTER_POWER_DETECT_Pin LIMIT_Z_UP_Pin 
+                           Z_INDEX_Pin Z_DIAG_Pin */
+  GPIO_InitStruct.Pin = INPUT2_Pin|INPUT1_Pin|PRINTER_POWER_DETECT_Pin|LIMIT_Z_UP_Pin 
+                          |Z_INDEX_Pin|Z_DIAG_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : DETECT_5V_Pin DETECT_12V_Pin EMERGENCY_Pin */
-  GPIO_InitStruct.Pin = DETECT_5V_Pin|DETECT_12V_Pin|EMERGENCY_Pin;
+  /*Configure GPIO pins : DETECT_5V_Pin DETECT_12V_Pin */
+  GPIO_InitStruct.Pin = DETECT_5V_Pin|DETECT_12V_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PRINTER_POWER_DETECT_Pin */
-  GPIO_InitStruct.Pin = PRINTER_POWER_DETECT_Pin;
+  /*Configure GPIO pin : EMERGENCY_Pin */
+  GPIO_InitStruct.Pin = EMERGENCY_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(PRINTER_POWER_DETECT_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(EMERGENCY_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : OPE_SIGNAL_Pin OUTPUT1_Pin LED3_Pin LED4_Pin 
                            Z_STEP_Pin Z_DIR_Pin Y_STEP_Pin Y_DIR_Pin */
@@ -598,6 +601,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(LIMIT_Y_BACK_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 
 }
 

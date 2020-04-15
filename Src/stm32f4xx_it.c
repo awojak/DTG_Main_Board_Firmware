@@ -25,6 +25,7 @@
 /* USER CODE BEGIN Includes */
 #include "scheduler/task_scheduler.h"
 #include "drivers/motion_controller.h"
+#include "printer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -62,6 +63,7 @@ extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern TIM_HandleTypeDef htim10;
 /* USER CODE BEGIN EV */
 extern MotionController MotionY;
+extern tPrinter Printer;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -199,6 +201,20 @@ void SysTick_Handler(void)
 /* For the available peripheral interrupt handler names,                      */
 /* please refer to the startup file (startup_stm32f4xx.s).                    */
 /******************************************************************************/
+
+/**
+  * @brief This function handles EXTI line4 interrupt.
+  */
+void EXTI4_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI4_IRQn 0 */
+  EmergencyIRQ(&Printer);
+  /* USER CODE END EXTI4_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_4);
+  /* USER CODE BEGIN EXTI4_IRQn 1 */
+
+  /* USER CODE END EXTI4_IRQn 1 */
+}
 
 /**
   * @brief This function handles TIM1 update interrupt and TIM10 global interrupt.

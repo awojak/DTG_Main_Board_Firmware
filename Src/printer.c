@@ -64,11 +64,11 @@ void PrinterInitialize(tPrinter *p)
 void EmergencyIRQ(tPrinter *p)
 {
 	// If IRQ is only for active state, remove IF
-	if((p->emergency_gpio_port->IDR & p->emergency_pin) == (uint32_t)p->emergency_pin_active_level)
-	{
+	//if((p->emergency_gpio_port->IDR & p->emergency_pin) == (uint32_t)p->emergency_pin_active_level)
+	//{
 		//active emergnecy mode
 		ActiveEmergency(p);
-	}
+	//}
 }
 
 void PrinterProcess(tPrinter *p)
