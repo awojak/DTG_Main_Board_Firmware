@@ -46,7 +46,7 @@ static void DeactivateEmergency(tPrinter *p)
 
 void PrinterInitialize(tPrinter *p)
 {
-	if(!p->serwis_mode)
+	if(!p->service_mode)
 	{
 		//Check if already Initialized
 		if(isPrinterInitialized(p))

@@ -41,7 +41,7 @@ typedef struct sPrinter {
 	uint32_t timeout_motion_z;
 	uint32_t timeout_motion_y;
 
-	uint8_t serwis_mode;
+	uint8_t service_mode;
 
 } tPrinter;
 

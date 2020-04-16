@@ -121,7 +121,7 @@ tPrinter Printer = {
 		.MotionZ = &MotionZ,
 		.timeout_motion_z = 10000,
 		.timeout_motion_y = 10000,
-		.serwis_mode = 0,
+		.service_mode = 0,
 		.photo_barier_state = 1
 };
 
