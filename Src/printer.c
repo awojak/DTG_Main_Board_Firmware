@@ -71,6 +71,7 @@ inline void PhotoBarierIRQ(tPrinter *p)
 	//Active not safe mode for Motion Y
 	p->photo_barier_state = 1;
 	p->MotionY->not_safe = 1;
+	p->MotionZ->not_safe = 1;
 }
 
 /**
@@ -116,6 +117,7 @@ void PrinterProcess(tPrinter *p)
 		{
 			p->photo_barier_state = 0;
 			p->MotionY->not_safe = 0;
+			p->MotionZ->not_safe = 0;
 		}
 	} else {
 		//Additional check instead IRQ, because IRQ is just for edge

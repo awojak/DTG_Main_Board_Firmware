@@ -642,8 +642,43 @@ static void cliHome(char *cmdline)
 
 static void cliGCode(char *cmdline)
 {
-	//TODO To implement gcode interpretation
-	cliPrintLine("Not supported yet!");
+	int position;
+	uint8_t err=0;
+	MotionController *m;
+
+	while(*cmdline == ' ') ++cmdline; // ignore spaces
+
+	if(!sl_strncasecmp(cmdline, "G0", 2))
+	{
+		cmdline = (cmdline + 2);
+		while(*cmdline == ' ') ++cmdline; // ignore spaces
+
+		if(!sl_strncasecmp(cmdline, "Y", 1))
+		{
+			m = Printer.MotionY;
+		} else if(!sl_strncasecmp(cmdline, "Z", 1))
+		{
+			m = Printer.MotionZ;
+		} else
+		{
+			err++;
+		}
+
+		if(!err)
+		{
+			cmdline++;
+			while(*cmdline == ' ') ++cmdline; // ignore spaces
+			//TODO Check if it is number or not
+			position = fastA2I((cmdline));
+
+			MotionMovePos(m, position);
+		}
+
+	} else
+		err++;
+
+	if(err)
+		cliPrintLine("Wrong command!");
 }
 
 static void cliLoad(char* cmdline)

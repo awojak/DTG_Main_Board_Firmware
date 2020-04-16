@@ -67,7 +67,7 @@ MotionController MotionY = {
 		.rampMove.decel = PARAMETER_MOVE_DECEL_Y,
 		.home_timeout = 10000,
 		.standby_position = 50000,
-		.not_safe = 1,
+		.not_safe = 0,
 		.safe_dir = 1
 };
 
@@ -104,7 +104,7 @@ MotionController MotionZ = {
 		.rampMove.decel = PARAMETER_MOVE_DECEL_Z,
 		.home_timeout = 10000,
 		.standby_position = 10000,
-		.not_safe = 1,
+		.not_safe = 0,
 		.safe_dir = 0
 };
 
