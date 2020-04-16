@@ -97,6 +97,7 @@ void Error_Handler(void);
 #define OPE_SIGNAL_GPIO_Port GPIOB
 #define PHOTO_SENSOR_Pin GPIO_PIN_7
 #define PHOTO_SENSOR_GPIO_Port GPIOE
+#define PHOTO_SENSOR_EXTI_IRQn EXTI9_5_IRQn
 #define TABLE_SENSOR_Pin GPIO_PIN_8
 #define TABLE_SENSOR_GPIO_Port GPIOE
 #define INPUT3_Pin GPIO_PIN_9

@@ -66,7 +66,9 @@ MotionController MotionY = {
 		.rampMove.accel = PARAMETER_MOVE_ACCEL_Y,
 		.rampMove.decel = PARAMETER_MOVE_DECEL_Y,
 		.home_timeout = 10000,
-		.standby_position = 10000
+		.standby_position = 50000,
+		.not_safe = 1,
+		.safe_dir = 1
 };
 
 MotionController MotionZ = {
@@ -101,20 +103,26 @@ MotionController MotionZ = {
 		.rampMove.accel = PARAMETER_MOVE_ACCEL_Z,
 		.rampMove.decel = PARAMETER_MOVE_DECEL_Z,
 		.home_timeout = 10000,
-		.standby_position = 10000
+		.standby_position = 10000,
+		.not_safe = 1,
+		.safe_dir = 0
 };
 
 tPrinter Printer = {
 		.emergency_gpio_port = EMERGENCY_GPIO_Port,
 		.emergency_pin = EMERGENCY_Pin,
 		.emergency_pin_active_level = 1,
+		.photo_barier_gpio_port = PHOTO_SENSOR_GPIO_Port,
+		.photo_barier_pin = PHOTO_SENSOR_Pin,
+		.photo_barier_active_level = 0,
 		.initilize_state = 0,
 		.emergency_state = 0,
 		.MotionY = &MotionY,
 		.MotionZ = &MotionZ,
 		.timeout_motion_z = 10000,
 		.timeout_motion_y = 10000,
-		.serwis_mode = 0
+		.serwis_mode = 0,
+		.photo_barier_state = 1
 };
 
 static void taskHandleUSBCommunication()

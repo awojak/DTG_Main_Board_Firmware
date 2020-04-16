@@ -119,7 +119,7 @@ typedef struct{
 	uint8_t front_up_limit_active_level : 1;
 
 	//! Direction forward move.
-	unsigned char forward_dir : 1;
+	uint8_t forward_dir : 1;
 
 	//! True when stepper motor is running.
 	uint8_t running:1;
@@ -129,6 +129,12 @@ typedef struct{
 
 	//! True if initialized successfully
 	uint8_t initialized:1;
+
+	//! Motion Not Safe !
+	uint8_t not_safe:1;
+
+	//! Motion Safe DIR during not safe mode, 1 - forward, 0 - backward!
+	uint8_t safe_dir:1;
 
 	// UART buffer data
 	uint8_t uart_tx[8];

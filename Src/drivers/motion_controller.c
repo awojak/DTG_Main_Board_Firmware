@@ -62,6 +62,7 @@ void MotionProcess(MotionController *m)
 
 			} else {
 				//Error
+				SemDeactivate(&m->sem_home);
 			}
 		} else {
 			if(GetTicks() - SemGetTime(&m->sem_home) >= m->home_timeout)
@@ -328,11 +329,30 @@ void MotionControllerInitialize(MotionController *m)
 //Check limit switches and emergency
 static inline void limit(MotionController *m)
 {
-	//TODO Emergency check global variable not pin
-	if((EMERGENCY_GPIO_Port->IDR & EMERGENCY_Pin) == (uint32_t) GPIO_PIN_SET)
+	//Don't check emergency in Motion Controller, just disable motion if emergency active
+	//if((EMERGENCY_GPIO_Port->IDR & EMERGENCY_Pin) == (uint32_t) GPIO_PIN_SET)
+	//{
+	//	m->ramp_data.run_state = STOP;
+	//	m->homed = FALSE;
+	//}
+
+
+	// If not safe mode active, stop Move in not safe direction
+	if(m->not_safe)
 	{
-		m->ramp_data.run_state = STOP;
-		m->homed = FALSE;
+		if(m->safe_dir)
+		{
+			//Forward is safe
+			if(m->ramp_data.dir != m->forward_dir)
+				m->ramp_data.run_state = STOP;
+		} else
+		{
+			//Backward is safe
+			if(m->ramp_data.dir == m->forward_dir)
+				m->ramp_data.run_state = STOP;
+		}
+		if(m->ramp_data.dir != (m->forward_dir == m->safe_dir))
+			m->ramp_data.run_state = STOP;
 	}
 
 	if((m->back_down_limit_gpio_port->IDR & m->back_down_limit_pin) == (uint32_t)m->back_down_limit_active_level)
@@ -555,6 +575,7 @@ void MotionDisable(MotionController *m)
 
 	HAL_GPIO_WritePin(m->enable_gpio_port, m->enable_pin, state);
 
+	m->not_safe = 1;
 	m->enable_state = 0;
 	m->homed = 0;
 

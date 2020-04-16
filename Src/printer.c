@@ -35,6 +35,11 @@ static void DeactivateEmergency(tPrinter *p)
 		return;
 
 	p->emergency_state = 0;
+	p->MotionZ->not_safe = 0;
+
+	//TODO don't do it in this way, write function to check safety status
+	if(p->photo_barier_state == 0)
+		p->MotionY->not_safe = 0;
 
 	//TODO wyœlij komunikat gdzieœ dalej o zmianie statusuS
 }
@@ -59,6 +64,16 @@ void PrinterInitialize(tPrinter *p)
 }
 
 /**
+ *	This function disable Motion Y and should be execute in IRQ to be fast as possible
+ */
+inline void PhotoBarierIRQ(tPrinter *p)
+{
+	//Active not safe mode for Motion Y
+	p->photo_barier_state = 1;
+	p->MotionY->not_safe = 1;
+}
+
+/**
  *	This function enabled emergency state and should be execute in IRQ to be fast as possible
  */
 void EmergencyIRQ(tPrinter *p)
@@ -76,8 +91,6 @@ void PrinterProcess(tPrinter *p)
 	// Check emergency
 	if(p->emergency_state == 1)
 	{
-		//Emergency state active
-
 		//check if button inactive
 		if((p->emergency_gpio_port->IDR & p->emergency_pin) != (uint32_t)p->emergency_pin_active_level)
 		{
@@ -86,6 +99,29 @@ void PrinterProcess(tPrinter *p)
 		} else {
 			//Exit
 			return;
+		}
+	} else {
+		//Additional check instead IRQ, because IRQ is just for edge
+		if((p->emergency_gpio_port->IDR & p->emergency_pin) == (uint32_t)p->emergency_pin_active_level)
+		{
+			EmergencyIRQ(p);
+		}
+	}
+
+	//Check Photo Barier State
+	if(p->photo_barier_state == 1)
+	{
+		//Check if inactive
+		if((p->photo_barier_gpio_port->IDR & p->photo_barier_pin) != (uint32_t)p->photo_barier_active_level)
+		{
+			p->photo_barier_state = 0;
+			p->MotionY->not_safe = 0;
+		}
+	} else {
+		//Additional check instead IRQ, because IRQ is just for edge
+		if((p->photo_barier_gpio_port->IDR & p->photo_barier_pin) == (uint32_t)p->photo_barier_active_level)
+		{
+			PhotoBarierIRQ(p);
 		}
 	}
 
