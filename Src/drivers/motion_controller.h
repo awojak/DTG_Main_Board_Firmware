@@ -33,6 +33,11 @@ typedef struct {
   signed int min_delay;
   //! Counter used when accelerateing/decelerateing to calculate step_delay.
   signed int accel_count;
+
+  // Counting steps when moving.
+  unsigned int step_count;
+  // Keep track of remainder from new_step-delay calculation to incrase accurancy
+  unsigned int rest;
 } speedRampData;
 
 typedef struct {

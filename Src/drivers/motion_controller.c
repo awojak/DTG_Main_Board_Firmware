@@ -348,11 +348,14 @@ static inline void limit(MotionController *m)
 	}
 }
 
-static inline void step(MotionController *m, unsigned int *step_count)
+static inline void step(MotionController *m)
 {
 	//TODO remove hal library to increase speed
 	HAL_GPIO_TogglePin(m->step_gpio_port, m->step_pin);
-	(*step_count)++;
+
+	//Increase step
+	m->ramp_data.step_count++;
+
 	if(m->forward_dir==m->ramp_data.dir)
 		m->position++;
 	else
@@ -374,10 +377,6 @@ void MotionUpdate(MotionController *m)
   unsigned int new_step_delay=0;
   // Remember the last step delay used when accelerating.
   //static int last_accel_delay;
-  // Counting steps when moving.
-  static unsigned int step_count = 0;
-  // Keep track of remainder from new_step-delay calculation to incrase accurancy
-  static unsigned int rest = 0;
 
   //check limit switch state and emergency state
   limit(m);
@@ -386,44 +385,44 @@ void MotionUpdate(MotionController *m)
 
   switch(m->ramp_data.run_state) {
     case STOP:
-      step_count = 0;
-      rest = 0;
+      m->ramp_data.step_count = 0;
+      m->ramp_data.rest = 0;
       // Stop Timer/Counter 1.
       HAL_TIM_Base_Stop_IT(m->timer);
       m->running = FALSE;
       break;
 
     case ACCEL:
-      step(m,&step_count);
+      step(m);
       //HAL_GPIO_TogglePin(m->step_gpio_port, m->step_pin);
       //sm_driver_StepCounter(m->ramp_data.dir);
       //step_count++;
       m->ramp_data.accel_count++;
-      new_step_delay = (unsigned int)(m->ramp_data.step_delay - (((2 * (long)m->ramp_data.step_delay) + rest)/(4 * m->ramp_data.accel_count + 1)));
-      rest = (unsigned int)(((2 * (long)m->ramp_data.step_delay)+rest)%(4 * m->ramp_data.accel_count + 1));
+      new_step_delay = (unsigned int)(m->ramp_data.step_delay - (((2 * (long)m->ramp_data.step_delay) + (m->ramp_data.rest))/(4 * m->ramp_data.accel_count + 1)));
+      m->ramp_data.rest = (unsigned int)(((2 * (long)m->ramp_data.step_delay)+(m->ramp_data.rest))%(4 * m->ramp_data.accel_count + 1));
       // Chech if we should start decelration.
-      if(step_count >= m->ramp_data.decel_start) {
+      if(m->ramp_data.step_count >= m->ramp_data.decel_start) {
         m->ramp_data.accel_count = m->ramp_data.decel_val;
-        rest = 0;
+        m->ramp_data.rest = 0;
         m->ramp_data.run_state = DECEL;
       }
       // Chech if we hitted max speed.
       else if(new_step_delay <= m->ramp_data.min_delay) {
         //last_accel_delay = new_step_delay;
         new_step_delay = m->ramp_data.min_delay;
-        rest = 0;
+        m->ramp_data.rest = 0;
         m->ramp_data.run_state = RUN;
       }
       break;
 
     case RUN:
-      step(m,&step_count);
+      step(m);
       //HAL_GPIO_TogglePin(m->step_gpio_port, m->step_pin);
       //sm_driver_StepCounter(m->ramp_data.dir);
       //step_count++;
       new_step_delay = m->ramp_data.min_delay;
       // Chech if we should start decelration.
-      if(step_count >= m->ramp_data.decel_start) {
+      if(m->ramp_data.step_count >= m->ramp_data.decel_start) {
         m->ramp_data.accel_count = m->ramp_data.decel_val;
         // Start decelration with same delay as accel ended with.
         //new_step_delay = last_accel_delay;
@@ -432,13 +431,13 @@ void MotionUpdate(MotionController *m)
       break;
 
     case DECEL:
-      step(m,&step_count);
+      step(m);
       //HAL_GPIO_TogglePin(m->step_gpio_port, m->step_pin);
       //sm_driver_StepCounter(m->ramp_data.dir);
       //step_count++;
       m->ramp_data.accel_count++;
-      new_step_delay = (unsigned int)( m->ramp_data.step_delay - (int)(((2 * (long)m->ramp_data.step_delay) + (long)rest)/(4 * m->ramp_data.accel_count + 1)));
-      rest = (unsigned int)(((2 * (long)m->ramp_data.step_delay)+(long)rest)%(4 * m->ramp_data.accel_count + 1));
+      new_step_delay = (unsigned int)( m->ramp_data.step_delay - (int)(((2 * (long)m->ramp_data.step_delay) + (long)(m->ramp_data.rest))/(4 * m->ramp_data.accel_count + 1)));
+      m->ramp_data.rest = (unsigned int)(((2 * (long)m->ramp_data.step_delay)+(long)(m->ramp_data.rest))%(4 * m->ramp_data.accel_count + 1));
       // Check if we at last step
       if(m->ramp_data.accel_count >= 0){
         m->ramp_data.run_state = STOP;

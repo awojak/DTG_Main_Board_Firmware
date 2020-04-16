@@ -19,6 +19,7 @@
 
 extern UART_HandleTypeDef huart2;
 extern TIM_HandleTypeDef htim10;
+extern TIM_HandleTypeDef htim9;
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
 serialPort_t *serialPort = NULL;
@@ -84,7 +85,7 @@ MotionController MotionZ = {
 		.step_gpio_port = Z_STEP_GPIO_Port,
 		.step_pin = Z_STEP_Pin,
 		.forward_dir = CW,
-		.timer = &htim10, //todo zmienic
+		.timer = &htim9,
 		.uart = &huart2,
 		.tmc_addr = 0,
 		.rampHome.speed = PARAMETER_HOME_SPEED_Z,
@@ -214,10 +215,9 @@ void tasksInitialize()
 	TaskCreate(&stsTasks, &tPrinterProcess, &taskPrinterProcess, 15);
 	TaskStartRepeatedly(&tPrinterProcess, 50);
 
-	MotionControllerInitialize(&MotionY);
 	MotionControllerInitialize(&MotionZ);
+	MotionControllerInitialize(&MotionY);
 
-	PrinterInitialize(&Printer);
 }
 
 void tasksScheduler()
