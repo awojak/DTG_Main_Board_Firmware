@@ -576,11 +576,33 @@ static void cliStatus(char *cmdline)
 
     cliPrintLinefeed();
 
-    cliPrintLine("STM32 system clocks:");
-    cliPrintLinef("  SYSCLK = %d MHz", HAL_RCC_GetSysClockFreq() / 1000000);
-    cliPrintLinef("  HCLK   = %d MHz", HAL_RCC_GetHCLKFreq() / 1000000);
-    cliPrintLinef("  PCLK1  = %d MHz", HAL_RCC_GetPCLK1Freq() / 1000000);
-    cliPrintLinef("  PCLK2  = %d MHz", HAL_RCC_GetPCLK2Freq() / 1000000);
+    //cliPrintLine("STM32 system clocks:");
+    //cliPrintLinef("  SYSCLK = %d MHz", HAL_RCC_GetSysClockFreq() / 1000000);
+    //cliPrintLinef("  HCLK   = %d MHz", HAL_RCC_GetHCLKFreq() / 1000000);
+    //cliPrintLinef("  PCLK1  = %d MHz", HAL_RCC_GetPCLK1Freq() / 1000000);
+    //cliPrintLinef("  PCLK2  = %d MHz", HAL_RCC_GetPCLK2Freq() / 1000000);
+
+    cliPrintLine("Printer status:");
+    cliPrintLinef("  Initialized: %d", Printer.initilize_state);
+    cliPrintLinef("  Emergency: %d", Printer.emergency_state);
+    cliPrintLinef("  Photo barrier: %d", Printer.photo_barier_state);
+    cliPrintLinef("  Service mode: %d",Printer.service_mode);
+    cliPrintLine("Motion Y:");
+    cliPrintLinef("  Initialized: %d", Printer.MotionY->initialized);
+    cliPrintLinef("  Enable: %d", Printer.MotionY->enable_state);
+    cliPrintLinef("  Homed: %d", Printer.MotionY->homed);
+    cliPrintLinef("  Not Safe: %d", Printer.MotionY->not_safe);
+    cliPrintLinef("  Limit Back: %d", !HAL_GPIO_ReadPin(Printer.MotionY->back_down_limit_gpio_port, Printer.MotionY->back_down_limit_pin));
+    cliPrintLinef("  Limit Front: %d", !HAL_GPIO_ReadPin(Printer.MotionY->front_up_limit_gpio_port, Printer.MotionY->front_up_limit_pin));
+    cliPrintLinef("  Position: %d", Printer.MotionY->position);
+    cliPrintLine("Motion Z:");
+    cliPrintLinef("  Initialized: %d", Printer.MotionZ->initialized);
+    cliPrintLinef("  Enable: %d", Printer.MotionZ->enable_state);
+    cliPrintLinef("  Homed: %d", Printer.MotionZ->homed);
+    cliPrintLinef("  Not Safe: %d", Printer.MotionZ->not_safe);
+    cliPrintLinef("  Limit Back: %d", !HAL_GPIO_ReadPin(Printer.MotionZ->back_down_limit_gpio_port, Printer.MotionZ->back_down_limit_pin));
+    cliPrintLinef("  Limit Front: %d", !HAL_GPIO_ReadPin(Printer.MotionZ->front_up_limit_gpio_port, Printer.MotionZ->front_up_limit_pin));
+    cliPrintLinef("  Position: %d", Printer.MotionZ->position);
 }
 
 static void cliVersion(char *cmdline)
