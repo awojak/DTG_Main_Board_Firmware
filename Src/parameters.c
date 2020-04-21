@@ -115,6 +115,15 @@ static setting_t pe_upper_limit = {
 
 // Y motor parameters
 /* PRINT */
+static setting_t home_speed_y = {
+		.name = "home_speed_y",
+		.type = VAR_UINT32 | MASTER_VALUE,
+		.config.def = PARAMETER_HOME_SPEED_Y,
+		.config.min = PARAMETER_HOME_SPEED_Y_MIN,
+		.config.max = PARAMETER_HOME_SPEED_Y_MAX,
+		.parameterPointer = &MotionY.rampHome.speed
+};
+
 static setting_t print_speed_y = {
 		.name = "print_speed_y",
 		.type = VAR_UINT32 | MASTER_VALUE,
@@ -203,6 +212,15 @@ static setting_t move_decel_y = {
 // Parameters definition
 // Z motor parameters
 /* PRINT */
+static setting_t home_speed_z = {
+		.name = "home_speed_z",
+		.type = VAR_UINT32 | MASTER_VALUE,
+		.config.def = PARAMETER_HOME_SPEED_Z,
+		.config.min = PARAMETER_HOME_SPEED_Z_MIN,
+		.config.max = PARAMETER_HOME_SPEED_Z_MAX,
+		.parameterPointer = &MotionZ.rampHome.speed
+};
+
 static setting_t print_speed_z = {
 		.name = "print_speed_z",
 		.type = VAR_UINT32 | MASTER_VALUE,
@@ -298,6 +316,7 @@ const setting_t *parametersTable[] = {
 		&pe_lower_limit,
 		&pe_upper_limit,
 		&timeout_motion_y,
+		&home_speed_y,
 		&print_speed_y,
 		&print_accel_y,
 		&print_decel_y,
@@ -308,6 +327,7 @@ const setting_t *parametersTable[] = {
 		&jog_accel_y,
 		&jog_decel_y,
 		&timeout_motion_z,
+		&home_speed_z,
 		&print_speed_z,
 		&print_accel_z,
 		&print_decel_z,
