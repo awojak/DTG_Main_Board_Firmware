@@ -588,6 +588,7 @@ static void cliStatus(char *cmdline)
     cliPrintLinef("  Emergency: %d", Printer.emergency_state);
     cliPrintLinef("  Photo barrier: %d", Printer.photo_barier_state);
     cliPrintLinef("  Service mode: %d",Printer.service_mode);
+    cliPrintLinef("  Encoder_count: %d",Printer.encoder_count);
     cliPrintLine("Motion Y:");
     cliPrintLinef("  Initialized: %d", Printer.MotionY->initialized);
     cliPrintLinef("  Enable: %d", Printer.MotionY->enable_state);
