@@ -42,7 +42,7 @@ typedef struct sPrinter {
 	//Epson encoder pulses count
 	int encoder_count;
 	//Start position for printing
-	int prtint_start_position;
+	int print_start_position;
 	//PE Sensor singal activation limit during priting
 	int pe_lower_limit;
 	int pe_upper_limit;

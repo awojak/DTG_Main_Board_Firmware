@@ -10,8 +10,6 @@
 
 #include "../drivers/motion_controller.h"
 
-extern MotionController MotionY;
-
 void tasksInitialize();
 void tasksScheduler();
 

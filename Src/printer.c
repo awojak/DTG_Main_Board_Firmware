@@ -122,7 +122,7 @@ void PrinterPrintingProcess(tPrinter *p)
 		case PRINT:
 
 			//Reset timer counter to printer start position
-			p->encoder_count = p->prtint_start_position * p->stepper_factor;
+			p->encoder_count = p->print_start_position * p->stepper_factor;
 			p->enc_timer->CNT = p->encoder_count;
 
 

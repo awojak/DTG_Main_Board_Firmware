@@ -182,6 +182,7 @@ uint8_t checkErrors(MotionController *m);
 void MotionJogSteps(MotionController *m, signed int steps);
 void MotionMove(MotionController *m, uint8_t dir, unsigned int accel, unsigned int speed);
 void MotionMovePos(MotionController *m, int pos);
+void MotionMovePrinting(MotionController *m, signed int position);
 
 void MotionMoveSteps(MotionController *m, signed int step, unsigned int accel, unsigned int decel, unsigned int speed);
 void MotionMoveSpeed(MotionController *m, unsigned char dir);

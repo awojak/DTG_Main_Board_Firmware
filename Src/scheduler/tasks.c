@@ -20,7 +20,6 @@
 extern UART_HandleTypeDef huart2;
 
 extern TIM_HandleTypeDef htim10;
-extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim9;
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
@@ -124,18 +123,18 @@ tPrinter Printer = {
 		.emergency_state = 0,
 		.MotionY = &MotionY,
 		.MotionZ = &MotionZ,
-		.timeout_motion_z = 10000,
-		.timeout_motion_y = 10000,
+		.timeout_motion_z = PARAMETER_PRINT_TIMEOUT_Z,
+		.timeout_motion_y = PARAMETER_PRINT_TIMEOUT_Y,
 		.service_mode = 0,
 		.photo_barier_state = 1,
 		.printer_state = IDLE,
-		.pe_lower_limit = 950, //For Epson P600, todo need to be adjusted
-		.pe_upper_limit = 1050, //For Epson P600, todo need to be adjusted
-		.prtint_start_position = 10000, //todo need to be adjusted
-		.stepper_factor = 5.84, //todo need to be adjusted
+		.pe_lower_limit = PARAMETER_PRINT_PE_LOWER_LIMIT, //For Epson P600, todo need to be adjusted
+		.pe_upper_limit = PARAMETER_PRINT_PE_UPPER_LIMIT, //For Epson P600, todo need to be adjusted
+		.print_start_position = PARAMETER_PRINT_START_POS, //todo need to be adjusted
+		.stepper_factor = PARAMETER_PRINT_STEPPER_FACTOR, //todo need to be adjusted
 		.enc_timer = TIM2,
-		.eject_trigger_position = 240000, //For Epson P600, todo need to be adjusted
-		.eject_position = 100000 //todo need to be adjusted for CJ200 printer
+		.eject_trigger_position = PARAMETER_PRINT_EJECT_TRIGGER_POS, //For Epson P600, todo need to be adjusted
+		.eject_position = PARAMETER_PRINT_EJECT_POS //todo need to be adjusted for CJ200 printer
 };
 
 static void taskHandleUSBCommunication()
