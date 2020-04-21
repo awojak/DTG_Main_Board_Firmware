@@ -13,9 +13,9 @@ extern const setting_t *parametersTable[];
 extern const uint16_t paramsTableLen;
 
 //change every time if you change parameters table
-#define PARAMETERS_VERSION 1
+#define PARAMETERS_VERSION 2
 
-#define PARAMETERS_MAX_NAME_LENGTH 20
+#define PARAMETERS_MAX_NAME_LENGTH 25
 
 /******************** PRINTER ********************/
 
@@ -60,7 +60,7 @@ extern const uint16_t paramsTableLen;
 #define PARAMETER_HOME_DECEL_Y	10000
 
 /* Parameters for motor during printing */
-#define PARAMETER_PRINT_SPEED_Y 5000
+#define PARAMETER_PRINT_SPEED_Y 2000
 #define PARAMETER_PRINT_SPEED_Y_MIN 1
 #define PARAMETER_PRINT_SPEED_Y_MAX 20000
 
@@ -73,7 +73,7 @@ extern const uint16_t paramsTableLen;
 #define PARAMETER_PRINT_DECEL_Y_MAX 200000
 
 /* Parameters for motor during movement*/
-#define PARAMETER_MOVE_SPEED_Y 5000
+#define PARAMETER_MOVE_SPEED_Y 2000
 #define PARAMETER_MOVE_SPEED_Y_MIN 1
 #define PARAMETER_MOVE_SPEED_Y_MAX 20000
 
@@ -86,7 +86,7 @@ extern const uint16_t paramsTableLen;
 #define PARAMETER_MOVE_DECEL_Y_MAX 200000
 
 /* Parameters for motor during jog */
-#define PARAMETER_JOG_SPEED_Y 2000
+#define PARAMETER_JOG_SPEED_Y 1000
 #define PARAMETER_JOG_SPEED_Y_MIN 1
 #define PARAMETER_JOG_SPEED_Y_MAX 20000
 
@@ -108,7 +108,7 @@ extern const uint16_t paramsTableLen;
 #define PARAMETER_HOME_DECEL_Z	10000
 
 /* Parameters for motor during printing */
-#define PARAMETER_PRINT_SPEED_Z 5000
+#define PARAMETER_PRINT_SPEED_Z 2000
 #define PARAMETER_PRINT_SPEED_Z_MIN 1
 #define PARAMETER_PRINT_SPEED_Z_MAX 20000
 
@@ -121,7 +121,7 @@ extern const uint16_t paramsTableLen;
 #define PARAMETER_PRINT_DECEL_Z_MAX 200000
 
 /* Parameters for motor during movement*/
-#define PARAMETER_MOVE_SPEED_Z 5000
+#define PARAMETER_MOVE_SPEED_Z 2000
 #define PARAMETER_MOVE_SPEED_Z_MIN 1
 #define PARAMETER_MOVE_SPEED_Z_MAX 20000
 
@@ -134,7 +134,7 @@ extern const uint16_t paramsTableLen;
 #define PARAMETER_MOVE_DECEL_Z_MAX 200000
 
 /* Parameters for motor during jog */
-#define PARAMETER_JOG_SPEED_Z 2000
+#define PARAMETER_JOG_SPEED_Z 1000
 #define PARAMETER_JOG_SPEED_Z_MIN 1
 #define PARAMETER_JOG_SPEED_Z_MAX 20000
 
