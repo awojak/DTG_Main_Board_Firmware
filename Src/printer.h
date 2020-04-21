@@ -72,6 +72,7 @@ typedef struct sPrinter {
 } tPrinter;
 
 void PrinterProcess(tPrinter *p);
+void PrinterPrintingProcess(tPrinter *p);
 void EmergencyIRQ(tPrinter *p);
 void PhotoBarierIRQ(tPrinter *p);
 void PrinterInitialize(tPrinter *p);
