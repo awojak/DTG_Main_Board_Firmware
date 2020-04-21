@@ -114,6 +114,123 @@ void MotionHome(MotionController *m)
  *  \param decel  Decelration to use, in 0.01*rad/sec^2.
  *  \param speed  Max speed, in 0.01*rad/sec.
  */
+void MotionMovePrinting(MotionController *m, signed int position)
+{
+	//TODO If already in motion, update just position
+  //! Number of steps before we hit max speed.
+  unsigned int max_s_lim;
+  //! Number of steps before we must start deceleration (if accel does not hit max speed).
+  unsigned int accel_lim;
+
+  int step;
+
+  step = position - m->position;
+
+  // Set direction from sign on step value.
+  if(step < 0){
+    step = -step;
+    SetCCW_DIR(m);
+  }
+  else{
+    SetCW_DIR(m);
+  }
+
+  // If moving only 1 step.
+  if(step == 1){
+    // Move one step...
+    m->ramp_data.accel_count = -1;
+    // ...in DECEL state.
+    m->ramp_data.run_state = DECEL;
+    // Just a short delay so main() can act on 'running'.
+    m->ramp_data.step_delay = 1000;
+    m->running = TRUE;
+
+    m->timer->Instance->ARR = 10;
+    // Run Timer
+    HAL_TIM_Base_Start_IT(m->timer);
+  }
+  // Only move if number of steps to move is not zero.
+  else if(step != 0){
+    // Refer to documentation for detailed information about these calculations.
+
+    // Set max speed limit, by calc min_delay to use in timer.
+    // min_delay = (alpha / tt)/ w
+    m->ramp_data.min_delay = (int)(A_T_x100 / m->rampPrint.speed);
+
+    // Set accelration by calc the first (c0) step delay .
+    // step_delay = 1/tt * Sqrt(2*alpha/accel)
+    // step_delay = ( tfreq*0.676/100 )*100 * Sqrt( (2*alpha*10000000000) / (accel*100) )/10000
+    m->ramp_data.step_delay = (unsigned int)((T1_FREQ_148 * Sqrt(A_SQ / m->rampPrint.accel))/100);
+
+    // Find out after how many steps does the speed hit the max speed limit.
+    // max_s_lim = speed^2 / (2*alpha*accel)
+    max_s_lim = (unsigned int)((long)(m->rampPrint.speed)*(m->rampPrint.speed)/(long)(((long)A_x20000*(m->rampPrint.accel))/100));
+    // If we hit max speed limit before 0,5 step it will round to 0.
+    // But in practice we need to move atleast 1 step to get any speed at all.
+    if(max_s_lim == 0){
+      max_s_lim = 1;
+    }
+
+    // Find out after how many steps we must start deceleration.
+    // n1 = (n1+n2)decel / (accel + decel)
+    accel_lim = (unsigned int)(((long)step*(m->rampPrint.decel)) / (m->rampPrint.accel+m->rampPrint.decel));
+    // We must accelrate at least 1 step before we can start deceleration.
+    if(accel_lim == 0){
+      accel_lim = 1;
+    }
+
+    // Use the limit we hit first to calc decel.
+    if(accel_lim <= max_s_lim){
+      m->ramp_data.decel_val = (int)(accel_lim - step);
+    }
+    else{
+      m->ramp_data.decel_val = -(int)(((long)max_s_lim*(m->rampPrint.accel))/(m->rampPrint.decel));
+    }
+    // We must decelrate at least 1 step to stop.
+    if(m->ramp_data.decel_val == 0){
+      m->ramp_data.decel_val = -1;
+    }
+
+    // Find step to start decleration.
+    m->ramp_data.decel_start = (unsigned int)(step + m->ramp_data.decel_val);
+
+    // If the maximum speed is so low that we dont need to go via accelration state.
+    if(m->ramp_data.step_delay <= m->ramp_data.min_delay){
+      m->ramp_data.step_delay = m->ramp_data.min_delay;
+      m->ramp_data.run_state = RUN;
+    }
+    else{
+      m->ramp_data.run_state = ACCEL;
+    }
+
+    // If the minimum speed is to low
+    if(m->ramp_data.step_delay >= 65536){
+      m->ramp_data.step_delay = 65535;
+    }
+
+    // Reset counter.
+    m->ramp_data.accel_count = 0;
+    m->running = TRUE;
+
+    m->timer->Instance->ARR = 10;
+    // Run Timer
+    HAL_TIM_Base_Start_IT(m->timer);
+  }
+}
+
+/*! \brief Move the stepper motor a given number of steps.
+ *
+ *  Makes the stepper motor move the given number of steps.
+ *  It accelrate with given accelration up to maximum speed and decelerate
+ *  with given deceleration so it stops at the given step.
+ *  If accel/decel is to small and steps to move is to few, speed might not
+ *  reach the max speed limit before deceleration starts.
+ *
+ *  \param step  Number of steps to move (pos - CW, neg - CCW).
+ *  \param accel  Accelration to use, in 0.01*rad/sec^2.
+ *  \param decel  Decelration to use, in 0.01*rad/sec^2.
+ *  \param speed  Max speed, in 0.01*rad/sec.
+ */
 void MotionMoveSteps(MotionController *m, signed int step, unsigned int accel, unsigned int decel, unsigned int speed)
 {
   //! Number of steps before we hit max speed.

@@ -8,6 +8,20 @@
 #include "printer.h"
 #include "drivers/motion_controller.h"
 
+/* Paper detect */
+static inline void activePE(tPrinter *p)
+{
+	HAL_GPIO_WritePin(p->pe_signal_gpio_port, p->pe_signal_pin, p->pe_signal_active_level);
+	p->pe_state = 1;
+}
+
+/* No paper detect */
+static inline void deactivePE(tPrinter *p)
+{
+	HAL_GPIO_WritePin(p->pe_signal_gpio_port, p->pe_signal_pin, !(p->pe_signal_active_level));
+	p->pe_state = 0;
+}
+
 static void ActiveEmergency(tPrinter *p)
 {
 	//if already active, exit function
@@ -59,6 +73,9 @@ void PrinterInitialize(tPrinter *p)
 
 	//TODO Before start process
 
+	//PE Signal - no paper
+	deactivePE(p);
+
 	//Start Initialize
 	SemActivate(&p->sem_init, 0);
 }
@@ -86,6 +103,80 @@ void EmergencyIRQ(tPrinter *p)
 		ActiveEmergency(p);
 	//}
 }
+
+/* Every 1ms, main printing loop, should be disable during non printing */
+void PrinterPrintingProcess(tPrinter *p)
+{
+	int encoder_new_value;
+
+	int stepper_position;
+	/* Printer should be initialized and homed before execute this process */
+	/* Function don't check states to be fast ASAP */
+	/* Table should be at start printing position */
+
+	switch(p->printer_state)
+	{
+		case IDLE:
+		break;
+
+		case PRINT:
+
+			//Reset timer counter to printer start position
+			p->encoder_count = p->prtint_start_position * p->stepper_factor;
+			p->enc_timer->CNT = p->encoder_count;
+
+
+			//deactive PE
+			deactivePE(p);
+			//go to printing state
+			p->printer_state = PRINTING;
+
+		break;
+
+		case PRINTING:
+
+			//Read EPSON encoder value
+			encoder_new_value = p->enc_timer->CNT;
+
+			//Check if encoder wheel has moved
+			if((encoder_new_value != p->encoder_count)&&(!(p->MotionY->running)))
+			{
+				stepper_position = encoder_new_value / p->stepper_factor;
+
+				//Go to calculated stepper position !
+				//TODO Finish MotionMovePrinting function!
+				MotionMovePrinting(p->MotionY, stepper_position);
+
+			   //Save encoder pos for next calculation
+			   p->encoder_count = encoder_new_value;
+			}
+
+		    // At XXX encoder trigger the PE signal
+		   if ((encoder_new_value > p->pe_lower_limit) & (encoder_new_value  < p->pe_upper_limit))
+		   {
+			   //TODO be carefully to not skip if EPSON encoder increase to much
+			   activePE(p);
+		   }
+
+		   if(encoder_new_value > p->eject_trigger_position)
+		   {
+			   //Printing finished
+			   deactivePE(p);
+			   p->printer_state = FINISH;
+		   }
+
+		break;
+
+		case FINISH:
+			//Go to Eject position
+			//TODO check if move is possible, previous printing movement should be stopped
+			MotionMovePos(p->MotionY, p->eject_position);
+			//Go to IDLE or deactive task
+			p->printer_state = IDLE;
+		break;
+	}
+}
+
 
 void PrinterProcess(tPrinter *p)
 {

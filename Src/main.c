@@ -127,6 +127,9 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_TIM9_Init();
   /* USER CODE BEGIN 2 */
+  //Start encoder for EPSON printer
+  HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
+  //Initialize tasks
   tasksInitialize();
   /* USER CODE END 2 */
 

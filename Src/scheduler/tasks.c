@@ -18,7 +18,9 @@
 #include "../printer.h"
 
 extern UART_HandleTypeDef huart2;
+
 extern TIM_HandleTypeDef htim10;
+extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim9;
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
@@ -112,6 +114,9 @@ tPrinter Printer = {
 		.emergency_gpio_port = EMERGENCY_GPIO_Port,
 		.emergency_pin = EMERGENCY_Pin,
 		.emergency_pin_active_level = 1,
+		.pe_signal_gpio_port = OPE_SIGNAL_GPIO_Port,
+		.pe_signal_pin = OPE_SIGNAL_Pin,
+		.pe_signal_active_level = 1,
 		.photo_barier_gpio_port = PHOTO_SENSOR_GPIO_Port,
 		.photo_barier_pin = PHOTO_SENSOR_Pin,
 		.photo_barier_active_level = 0,
@@ -122,7 +127,15 @@ tPrinter Printer = {
 		.timeout_motion_z = 10000,
 		.timeout_motion_y = 10000,
 		.service_mode = 0,
-		.photo_barier_state = 1
+		.photo_barier_state = 1,
+		.printer_state = IDLE,
+		.pe_lower_limit = 950, //For Epson P600, todo need to be adjusted
+		.pe_upper_limit = 1050, //For Epson P600, todo need to be adjusted
+		.prtint_start_position = 10000, //todo need to be adjusted
+		.stepper_factor = 5.84, //todo need to be adjusted
+		.enc_timer = TIM2,
+		.eject_trigger_position = 240000, //For Epson P600, todo need to be adjusted
+		.eject_position = 100000 //todo need to be adjusted for CJ200 printer
 };
 
 static void taskHandleUSBCommunication()

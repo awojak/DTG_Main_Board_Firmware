@@ -584,6 +584,7 @@ static void cliStatus(char *cmdline)
 
     cliPrintLine("Printer status:");
     cliPrintLinef("  Initialized: %d", Printer.initilize_state);
+    cliPrintLinef("  Printer state: %d", Printer.printer_state);
     cliPrintLinef("  Emergency: %d", Printer.emergency_state);
     cliPrintLinef("  Photo barrier: %d", Printer.photo_barier_state);
     cliPrintLinef("  Service mode: %d",Printer.service_mode);
@@ -736,10 +737,26 @@ static void cliSave(char *cmdline)
     }
     //cliReboot();
 }
-static void cliPrinterInitialize(char *cmdline)
+static void cliPrinter(char *cmdline)
 {
-	UNUSED(cmdline);
-	PrinterInitialize(&Printer);
+	uint8_t err=0;
+
+	while(*cmdline == ' ') ++cmdline; // ignore spaces
+
+	if(!sl_strncasecmp(cmdline, "init", 4))
+	{
+		PrinterInitialize(&Printer);
+	} else if(!sl_strncasecmp(cmdline, "start", 5))
+	{
+		Printer.printer_state = PRINT;
+	} else if(!sl_strncasecmp(cmdline, "stop", 4))
+	{
+		Printer.printer_state = FINISH;
+	} else
+		err++;
+
+	if(err)
+		cliPrintLine("Wrong command!\n Available: init, start, stop");
 }
 
 static void cliDefaults(char *cmdline)
@@ -783,7 +800,7 @@ const clicmd_t cmdTable[] = {
     CLI_COMMAND_DEF("get", "get variable value", "[name]", cliGet),
     CLI_COMMAND_DEF("help", NULL, NULL, cliHelp),
 	CLI_COMMAND_DEF("home", "home axis", NULL, cliHome),
-	CLI_COMMAND_DEF("init", "initialize printer", NULL, cliPrinterInitialize),
+	CLI_COMMAND_DEF("printer", "set printer state", NULL, cliPrinter),
 	CLI_COMMAND_DEF("load", "load settings from EEPROM", NULL, cliLoad),
     CLI_COMMAND_DEF("save", "save and reboot", NULL, cliSave),
     CLI_COMMAND_DEF("set", "change setting", "[<name>=<value>]", cliSet),
