@@ -170,6 +170,7 @@ void taskMotionProcess()
 void taskPrinterProcess()
 {
 	PrinterProcess(&Printer);
+	PrinterPrintingProcess(&Printer);
 }
 
 /**
@@ -232,8 +233,8 @@ void tasksInitialize()
 	TaskCreate(&stsTasks, &tMotionProcess, &taskMotionProcess, 10);
 	TaskStartRepeatedly(&tMotionProcess, 50);
 
-	TaskCreate(&stsTasks, &tPrinterProcess, &taskPrinterProcess, 15);
-	TaskStartRepeatedly(&tPrinterProcess, 50);
+	TaskCreate(&stsTasks, &tPrinterProcess, &taskPrinterProcess, 5);
+	TaskStartRepeatedly(&tPrinterProcess, 5);
 
 	MotionControllerInitialize(&MotionZ);
 	MotionControllerInitialize(&MotionY);
