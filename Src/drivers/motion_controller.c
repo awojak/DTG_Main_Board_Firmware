@@ -472,13 +472,13 @@ static inline void limit(MotionController *m)
 			m->ramp_data.run_state = STOP;
 	}
 
-	if((m->back_down_limit_gpio_port->IDR & m->back_down_limit_pin) == (uint32_t)m->back_down_limit_active_level)
+	if(HAL_GPIO_ReadPin(m->back_down_limit_gpio_port, m->back_down_limit_pin) == (uint32_t)m->back_down_limit_active_level)
 	{
 		if(m->ramp_data.dir != m->forward_dir)
 			m->ramp_data.run_state = STOP;
 	}
 
-	if((m->front_up_limit_gpio_port->IDR & m->front_up_limit_pin) == (uint32_t)m->front_up_limit_active_level)
+	if(HAL_GPIO_ReadPin(m->front_up_limit_gpio_port, m->front_up_limit_pin) == (uint32_t)m->front_up_limit_active_level)
 	{
 		if(m->ramp_data.dir == m->forward_dir)
 			m->ramp_data.run_state = STOP;
@@ -692,7 +692,7 @@ void MotionDisable(MotionController *m)
 
 	HAL_GPIO_WritePin(m->enable_gpio_port, m->enable_pin, state);
 
-	m->not_safe = 1;
+	//m->not_safe = 1;
 	m->enable_state = 0;
 	m->homed = 0;
 
