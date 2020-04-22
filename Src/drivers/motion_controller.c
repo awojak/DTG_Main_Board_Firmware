@@ -354,6 +354,9 @@ HAL_StatusTypeDef MotionReadRegister(MotionController *m, uint8_t reg, uint32_t 
 
 	//TODO how much to wait?
 	//Read 8 bytes
+	//clear buffer read one byte
+	status = HAL_UART_Receive(m->uart, m->uart_rx, 1, 10);
+
 	status = HAL_UART_Receive(m->uart, m->uart_rx, 8, 10);
 
 	if(status == HAL_OK)
@@ -416,11 +419,26 @@ void MotionControllerInitialize(MotionController *m)
 	MotionReadRegister(m, IFCNT, &data);
 	data = 0;
 	MotionReadRegister(m, GCONF, &data);
-	data = (1 << 5);
+	//Set IHOLD 8, IRUN 16
+	data = (1<<3)|(1 << 12);
 	MotionWriteRegister(m, IHOLD_IRUN, data);
 	data = 0;
 	MotionReadRegister(m, IFCNT, &data);
+	data = 0;
+	MotionReadRegister(m, CHOPCONF, &data);
+	//Reset microstepping
+	//data &= ~(1<<28 | 1<<27 | 1<<26 | 1<<25 | 1<<24);
+	//Set 16 microsteps, dedge
+	//data |= (1<<26 | 1<<29);
+	data = 0x24010053;
+	MotionWriteRegister(m, CHOPCONF, data);
+	data = 0;
+	MotionReadRegister(m, IFCNT, &data);
+	data = 0;
+	MotionReadRegister(m, CHOPCONF, &data);
 
+	//Read CHOPCONF
+	//1000 0000000010000000001010011
 	//TODO Configuracja dziala ale jest jeden problem z odbiorem danych, zawsze pierwszy bajt zawiera jakieœ smieci.
 
 	//VREF current set
