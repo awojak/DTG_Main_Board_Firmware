@@ -9,16 +9,28 @@
 #include "drivers/motion_controller.h"
 
 /* Paper detect */
-static inline void activePE(tPrinter *p)
+inline void activePE(tPrinter *p)
 {
-	HAL_GPIO_WritePin(p->pe_signal_gpio_port, p->pe_signal_pin, p->pe_signal_active_level);
+	GPIO_PinState state;
+	if(p->pe_signal_active_level)
+		state = GPIO_PIN_SET;
+	else
+		state = GPIO_PIN_RESET;
+
+	HAL_GPIO_WritePin(p->pe_signal_gpio_port, p->pe_signal_pin, state);
 	p->pe_state = 1;
 }
 
 /* No paper detect */
-static inline void deactivePE(tPrinter *p)
+inline void deactivePE(tPrinter *p)
 {
-	HAL_GPIO_WritePin(p->pe_signal_gpio_port, p->pe_signal_pin, !(p->pe_signal_active_level));
+	GPIO_PinState state;
+	if(p->pe_signal_active_level)
+		state = GPIO_PIN_RESET;
+	else
+		state = GPIO_PIN_SET;
+
+	HAL_GPIO_WritePin(p->pe_signal_gpio_port, p->pe_signal_pin, state);
 	p->pe_state = 0;
 }
 
@@ -122,8 +134,8 @@ void PrinterPrintingProcess(tPrinter *p)
 		case PRINT:
 
 			//Reset timer counter to printer start position
-			p->encoder_count = p->print_start_position * p->stepper_factor;
-			p->enc_timer->CNT = p->encoder_count;
+			p->encoder_count = 0;//p->print_start_position * p->stepper_factor;
+			p->enc_timer->CNT = 0;//p->encoder_count;
 
 
 			//deactive PE
@@ -146,25 +158,24 @@ void PrinterPrintingProcess(tPrinter *p)
 				//Go to calculated stepper position !
 				//TODO Finish MotionMovePrinting function!
 				MotionMovePrinting(p->MotionY, stepper_position);
-
-			   //Save encoder pos for next calculation
-			   p->encoder_count = encoder_new_value;
 			}
 
 		    // At XXX encoder trigger the PE signal
-		   if ((encoder_new_value > p->pe_lower_limit) & (encoder_new_value  < p->pe_upper_limit))
+		   if ((encoder_new_value > p->pe_lower_limit) & (encoder_new_value  < p->eject_trigger_position))
 		   {
 			   //TODO be carefully to not skip if EPSON encoder increase to much
-			   activePE(p);
+			   deactivePE(p);
 		   }
 
 		   if(encoder_new_value > p->eject_trigger_position)
 		   {
 			   //Printing finished
-			   deactivePE(p);
+			   activePE(p);
 			   p->printer_state = FINISH;
 		   }
 
+		   //Save encoder pos for next calculation
+		   p->encoder_count = encoder_new_value;
 		break;
 
 		case FINISH:

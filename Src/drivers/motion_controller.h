@@ -191,4 +191,7 @@ void MotionUpdate(MotionController *m);
 void MotionHome(MotionController *m);
 void MotionProcess(MotionController *m);
 
+uint8_t MotionSetIRUN(MotionController *m, uint32_t irun);
+uint8_t MotionSetIHOLD(MotionController *m, uint32_t ihold);
+
 #endif /* MOTION_CONTROLLER_H_ */

@@ -78,5 +78,7 @@ void PhotoBarierIRQ(tPrinter *p);
 void PrinterInitialize(tPrinter *p);
 uint8_t isEmergencyActive(tPrinter *p);
 uint8_t isPrinterInitialized(tPrinter *p);
+void activePE(tPrinter *p);
+void deactivePE(tPrinter *p);
 
 #endif /* PRINTER_H_ */

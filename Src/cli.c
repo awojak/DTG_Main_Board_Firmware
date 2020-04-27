@@ -589,6 +589,7 @@ static void cliStatus(char *cmdline)
     cliPrintLinef("  Photo barrier: %d", Printer.photo_barier_state);
     cliPrintLinef("  Service mode: %d",Printer.service_mode);
     cliPrintLinef("  Encoder count: %d",Printer.encoder_count);
+    cliPrintLinef("  PE State: %d",Printer.pe_state);
     cliPrintLine("Motion Y:");
     cliPrintLinef("  Initialized: %d", Printer.MotionY->initialized);
     cliPrintLinef("  Enable: %d", Printer.MotionY->enable_state);
@@ -640,6 +641,78 @@ static void cliHome(char *cmdline)
     } else {
     	cliPrintLine("Arguments Y or Z");
     }
+}
+
+static void cliMotion(char *cmdline)
+{
+	uint32_t tmp;
+	uint8_t err=0;
+	uint8_t err2 = 0;
+	MotionController *m;
+
+	while(*cmdline == ' ') ++cmdline; // ignore spaces
+
+	if(!sl_strncasecmp(cmdline, "IHOLD", 5))
+	{
+		cmdline = (cmdline + 5);
+		while(*cmdline == ' ') ++cmdline; // ignore spaces
+
+		if(!sl_strncasecmp(cmdline, "Y", 1))
+		{
+			m = Printer.MotionY;
+		} else if(!sl_strncasecmp(cmdline, "Z", 1))
+		{
+			m = Printer.MotionZ;
+		} else
+		{
+			err++;
+		}
+
+		if(!err)
+		{
+			cmdline++;
+			while(*cmdline == ' ') ++cmdline; // ignore spaces
+			//TODO Check if it is number or not
+			tmp = fastA2I((cmdline));
+
+			if(MotionSetIHOLD(m, tmp))
+				err2++;
+		}
+
+	} else if(!sl_strncasecmp(cmdline, "IRUN", 4))
+	{
+		cmdline = (cmdline + 4);
+		while(*cmdline == ' ') ++cmdline; // ignore spaces
+
+		if(!sl_strncasecmp(cmdline, "Y", 1))
+		{
+			m = Printer.MotionY;
+		} else if(!sl_strncasecmp(cmdline, "Z", 1))
+		{
+			m = Printer.MotionZ;
+		} else
+		{
+			err++;
+		}
+
+		if(!err)
+		{
+			cmdline++;
+			while(*cmdline == ' ') ++cmdline; // ignore spaces
+			//TODO Check if it is number or not
+			tmp = fastA2I((cmdline));
+
+			if(MotionSetIRUN(m, tmp))
+				err2++;
+		}
+	}else
+		err++;
+
+	if(err)
+		cliPrintLine("Wrong command! \n Use IHOLD or IRUN, select axis Y or Z, and value 0-32");
+
+	if(err2)
+		cliPrintLine("Error to write TMC");
 }
 
 static void cliGCode(char *cmdline)
@@ -801,6 +874,7 @@ const clicmd_t cmdTable[] = {
     CLI_COMMAND_DEF("get", "get variable value", "[name]", cliGet),
     CLI_COMMAND_DEF("help", NULL, NULL, cliHelp),
 	CLI_COMMAND_DEF("home", "home axis", NULL, cliHome),
+	CLI_COMMAND_DEF("motion", "motion parameters", NULL, cliMotion),
 	CLI_COMMAND_DEF("printer", "set printer state", NULL, cliPrinter),
 	CLI_COMMAND_DEF("load", "load settings from EEPROM", NULL, cliLoad),
     CLI_COMMAND_DEF("save", "save and reboot", NULL, cliSave),

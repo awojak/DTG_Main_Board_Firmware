@@ -115,7 +115,7 @@ tPrinter Printer = {
 		.emergency_pin_active_level = 1,
 		.pe_signal_gpio_port = OPE_SIGNAL_GPIO_Port,
 		.pe_signal_pin = OPE_SIGNAL_Pin,
-		.pe_signal_active_level = 1,
+		.pe_signal_active_level = 0,
 		.photo_barier_gpio_port = PHOTO_SENSOR_GPIO_Port,
 		.photo_barier_pin = PHOTO_SENSOR_Pin,
 		.photo_barier_active_level = 1,
@@ -235,6 +235,8 @@ void tasksInitialize()
 
 	TaskCreate(&stsTasks, &tPrinterProcess, &taskPrinterProcess, 5);
 	TaskStartRepeatedly(&tPrinterProcess, 5);
+
+	activePE(&Printer);
 
 	MotionControllerInitialize(&MotionZ);
 	MotionControllerInitialize(&MotionY);

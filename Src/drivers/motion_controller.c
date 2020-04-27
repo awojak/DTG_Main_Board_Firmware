@@ -419,7 +419,7 @@ void MotionControllerInitialize(MotionController *m)
 	MotionReadRegister(m, IFCNT, &data);
 	data = 0;
 	MotionReadRegister(m, GCONF, &data);
-	//Set IHOLD 8, IRUN 16
+	//Set IHOLD 8, IRUN 32
 	data = (1<<3)|(1 << 12);
 	MotionWriteRegister(m, IHOLD_IRUN, data);
 	data = 0;
@@ -459,6 +459,44 @@ void MotionControllerInitialize(MotionController *m)
 
 	/* If everything go well */
 	m->initialized = TRUE;
+}
+
+uint8_t MotionSetIHOLD(MotionController *m, uint32_t ihold)
+{
+	uint32_t ifcnt = 0;
+	uint32_t tmp = 0;
+	uint32_t data = 0;
+
+	MotionReadRegister(m, IFCNT, &ifcnt);
+	MotionReadRegister(m, IHOLD_IRUN, &data);
+	data &= ~(0x1F);
+	data |= (ihold & 0x1F) ;
+	MotionWriteRegister(m, IHOLD_IRUN, data);
+	MotionReadRegister(m, IFCNT, &tmp);
+
+	if(ifcnt!=tmp)
+		return 0;
+
+	return 1;
+}
+
+uint8_t MotionSetIRUN(MotionController *m, uint32_t irun)
+{
+	uint32_t ifcnt = 0;
+	uint32_t tmp = 0;
+	uint32_t data = 0;
+
+	MotionReadRegister(m, IFCNT, &ifcnt);
+	MotionReadRegister(m, IHOLD_IRUN, &data);
+	data &= ~(0x1F00);
+	data |= ((irun<<8) & 0x1F00) ;
+	MotionWriteRegister(m, IHOLD_IRUN, data);
+	MotionReadRegister(m, IFCNT, &tmp);
+
+	if(ifcnt!=tmp)
+		return 0;
+
+	return 1;
 }
 
 //Check limit switches and emergency
