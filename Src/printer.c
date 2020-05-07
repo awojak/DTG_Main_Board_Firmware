@@ -11,6 +11,7 @@
 /* Paper detect */
 inline void activePE(tPrinter *p)
 {
+	//Normalnie musimy ustawic pin w stanie niskim
 	GPIO_PinState state;
 	if(p->pe_signal_active_level)
 		state = GPIO_PIN_SET;
@@ -75,8 +76,8 @@ void PrinterInitialize(tPrinter *p)
 	if(!p->service_mode)
 	{
 		//Check if already Initialized
-		if(isPrinterInitialized(p))
-			return;
+		//if(isPrinterInitialized(p))
+		//	return;
 
 		//Check if emergency active
 		if(isEmergencyActive(p))
@@ -140,9 +141,17 @@ void PrinterPrintingProcess(tPrinter *p)
 
 			//deactive PE
 			deactivePE(p);
-			//go to printing state
-			p->printer_state = PRINTING;
 
+			//go to start position
+			MotionMovePos(p->MotionY, p->print_start_position);
+
+			if(!(p->MotionY->running))
+			{
+				//Wait for stop running
+				//go to printing state
+				p->printer_state = PRINTING;
+				//TODO implement timeout
+			}
 		break;
 
 		case PRINTING:
@@ -157,20 +166,20 @@ void PrinterPrintingProcess(tPrinter *p)
 
 				//Go to calculated stepper position !
 				//TODO Finish MotionMovePrinting function!
-				MotionMovePrinting(p->MotionY, stepper_position);
+				MotionMovePrinting(p->MotionY, p->print_start_position + stepper_position);
 			}
 
 		    // At XXX encoder trigger the PE signal
-		   if ((encoder_new_value > p->pe_lower_limit) & (encoder_new_value  < p->eject_trigger_position))
+		   if ((encoder_new_value > p->pe_lower_limit) && (encoder_new_value  < p->pe_upper_limit))
 		   {
 			   //TODO be carefully to not skip if EPSON encoder increase to much
-			   deactivePE(p);
+			   activePE(p);
 		   }
 
 		   if(encoder_new_value > p->eject_trigger_position)
 		   {
 			   //Printing finished
-			   activePE(p);
+			   deactivePE(p);
 			   p->printer_state = FINISH;
 		   }
 

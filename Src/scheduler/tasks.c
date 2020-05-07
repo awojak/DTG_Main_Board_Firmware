@@ -66,7 +66,7 @@ MotionController MotionY = {
 		.rampMove.speed = PARAMETER_MOVE_SPEED_Y,
 		.rampMove.accel = PARAMETER_MOVE_ACCEL_Y,
 		.rampMove.decel = PARAMETER_MOVE_DECEL_Y,
-		.home_timeout = 10000,
+		.home_timeout = 20000,
 		.standby_position = 50000,
 		.not_safe = 0,
 		.safe_dir = 1
@@ -103,7 +103,7 @@ MotionController MotionZ = {
 		.rampMove.speed = PARAMETER_MOVE_SPEED_Z,
 		.rampMove.accel = PARAMETER_MOVE_ACCEL_Z,
 		.rampMove.decel = PARAMETER_MOVE_DECEL_Z,
-		.home_timeout = 10000,
+		.home_timeout = 20000,
 		.standby_position = 10000,
 		.not_safe = 0,
 		.safe_dir = 0
@@ -115,7 +115,7 @@ tPrinter Printer = {
 		.emergency_pin_active_level = 1,
 		.pe_signal_gpio_port = OPE_SIGNAL_GPIO_Port,
 		.pe_signal_pin = OPE_SIGNAL_Pin,
-		.pe_signal_active_level = 0,
+		.pe_signal_active_level = 1,
 		.photo_barier_gpio_port = PHOTO_SENSOR_GPIO_Port,
 		.photo_barier_pin = PHOTO_SENSOR_Pin,
 		.photo_barier_active_level = 1,
@@ -236,10 +236,11 @@ void tasksInitialize()
 	TaskCreate(&stsTasks, &tPrinterProcess, &taskPrinterProcess, 5);
 	TaskStartRepeatedly(&tPrinterProcess, 5);
 
-	activePE(&Printer);
+	deactivePE(&Printer);
 
 	MotionControllerInitialize(&MotionZ);
 	MotionControllerInitialize(&MotionY);
+	MotionSetIRUN(&MotionY,31);
 
 }
 

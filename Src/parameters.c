@@ -41,6 +41,25 @@ static setting_t motion_state_y = {
 */
 // Parameters definition
 /* Printers parameters */
+
+static setting_t y_standby_position = {
+		.name = "y_standby_position",
+		.type = VAR_UINT32 | MASTER_VALUE,
+		.config.def = 50000,
+		.config.min = 0,
+		.config.max = 2000000,
+		.parameterPointer = &MotionY.standby_position
+};
+
+static setting_t z_standby_position = {
+		.name = "z_standby_position",
+		.type = VAR_UINT32 | MASTER_VALUE,
+		.config.def = 10000,
+		.config.min = 0,
+		.config.max = 2000000,
+		.parameterPointer = &MotionZ.standby_position
+};
+
 static setting_t stepper_factor = {
 		.name = "stepper_factor",
 		.type = VAR_FLOAT | MASTER_VALUE,
@@ -309,6 +328,8 @@ static setting_t move_decel_z = {
 /* Table contain all parameters */
 
 const setting_t *parametersTable[] = {
+		&y_standby_position,
+		&z_standby_position,
 		&stepper_factor,
 		&print_start_position,
 		&eject_trigger_position,
