@@ -142,16 +142,15 @@ void PrinterPrintingProcess(tPrinter *p)
 			//deactive PE
 			deactivePE(p);
 
+
 			//go to start position
 			MotionMovePos(p->MotionY, p->print_start_position);
 
-			if(!(p->MotionY->running))
-			{
-				//Wait for stop running
-				//go to printing state
-				p->printer_state = PRINTING;
-				//TODO implement timeout
-			}
+			//Wait for stop running
+			//go to printing state
+			p->printer_state = PRINTING;
+			//TODO implement timeout
+
 		break;
 
 		case PRINTING:
@@ -169,7 +168,13 @@ void PrinterPrintingProcess(tPrinter *p)
 				MotionMovePrinting(p->MotionY, p->print_start_position + stepper_position);
 			}
 
-		    // At XXX encoder trigger the PE signal
+		  // At XXX encoder trigger the PE signal
+		  if (encoder_new_value < p->pe_lower_limit)
+		  {
+			   //TODO be carefully to not skip if EPSON encoder increase to much
+			  deactivePE(p);
+		   }
+
 		   if ((encoder_new_value > p->pe_lower_limit) && (encoder_new_value  < p->pe_upper_limit))
 		   {
 			   //TODO be carefully to not skip if EPSON encoder increase to much

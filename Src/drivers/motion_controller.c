@@ -124,6 +124,13 @@ void MotionMovePrinting(MotionController *m, signed int position)
 
   int step;
 
+  //TODO Check status
+	if(m->initialized == 0)
+		return ;
+
+	if(m->homed == 0)
+		return ;
+
   step = position - m->position;
 
   // Set direction from sign on step value.

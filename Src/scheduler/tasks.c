@@ -240,7 +240,7 @@ void tasksInitialize()
 
 	MotionControllerInitialize(&MotionZ);
 	MotionControllerInitialize(&MotionY);
-	MotionSetIRUN(&MotionY,31);
+	//MotionSetIRUN(&MotionY,31);
 
 }
 

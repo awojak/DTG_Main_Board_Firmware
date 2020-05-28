@@ -129,7 +129,7 @@ static setting_t pe_upper_limit = {
 		.config.def = PARAMETER_PRINT_PE_UPPER_LIMIT,
 		.config.min = PARAMETER_PRINT_PE_UPPER_LIMIT_MIN,
 		.config.max = PARAMETER_PRINT_PE_UPPER_LIMIT_MAX,
-		.parameterPointer = &Printer.pe_lower_limit
+		.parameterPointer = &Printer.pe_upper_limit
 };
 
 // Y motor parameters
