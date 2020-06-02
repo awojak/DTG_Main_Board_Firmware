@@ -123,6 +123,7 @@ void PrinterPrintingProcess(tPrinter *p)
 	int encoder_new_value;
 
 	int stepper_position;
+
 	/* Printer should be initialized and homed before execute this process */
 	/* Function don't check states to be fast ASAP */
 	/* Table should be at start printing position */
@@ -137,11 +138,10 @@ void PrinterPrintingProcess(tPrinter *p)
 			//Reset timer counter to printer start position
 			p->encoder_count = 0;//p->print_start_position * p->stepper_factor;
 			p->enc_timer->CNT = 0;//p->encoder_count;
-
+			p->last_stepper_position = 0;
 
 			//deactive PE
 			deactivePE(p);
-
 
 			//go to start position
 			MotionMovePos(p->MotionY, p->print_start_position);
@@ -158,14 +158,17 @@ void PrinterPrintingProcess(tPrinter *p)
 			//Read EPSON encoder value
 			encoder_new_value = p->enc_timer->CNT;
 
-			//Check if encoder wheel has moved
-			if((encoder_new_value != p->encoder_count)&&(!(p->MotionY->running)))
-			{
-				stepper_position = encoder_new_value / p->stepper_factor;
+			//Calculate stepper_position
+			stepper_position = encoder_new_value / p->stepper_factor;
 
+			//Check if encoder wheel has moved, check if motion finished
+			//Move only forward during printing ()
+			if((stepper_position > p->last_stepper_position) && (!(p->MotionY->running)))
+			{
 				//Go to calculated stepper position !
-				//TODO Finish MotionMovePrinting function!
 				MotionMovePrinting(p->MotionY, p->print_start_position + stepper_position);
+			   //Save encoder pos for next calculation
+			   p->last_stepper_position = stepper_position;
 			}
 
 		  // At XXX encoder trigger the PE signal
@@ -188,8 +191,6 @@ void PrinterPrintingProcess(tPrinter *p)
 			   p->printer_state = FINISH;
 		   }
 
-		   //Save encoder pos for next calculation
-		   p->encoder_count = encoder_new_value;
 		break;
 
 		case FINISH:

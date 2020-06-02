@@ -118,19 +118,20 @@ void MotionMovePrinting(MotionController *m, signed int position)
 {
 	//TODO If already in motion, update just position
   //! Number of steps before we hit max speed.
-  unsigned int max_s_lim;
+  //unsigned int max_s_lim;
   //! Number of steps before we must start deceleration (if accel does not hit max speed).
-  unsigned int accel_lim;
+  //unsigned int accel_lim;
 
   int step;
 
-  //TODO Check status
+  //TODO Return some status about no move
 	if(m->initialized == 0)
-		return ;
+		return;
 
 	if(m->homed == 0)
-		return ;
+		return;
 
+  //calculate position to move
   step = position - m->position;
 
   // Set direction from sign on step value.
@@ -142,87 +143,82 @@ void MotionMovePrinting(MotionController *m, signed int position)
     SetCW_DIR(m);
   }
 
-  // If moving only 1 step.
-  if(step == 1){
-    // Move one step...
-    m->ramp_data.accel_count = -1;
-    // ...in DECEL state.
-    m->ramp_data.run_state = DECEL;
-    // Just a short delay so main() can act on 'running'.
-    m->ramp_data.step_delay = 1000;
-    m->running = TRUE;
+  /*
+  if(m->running)
+  {
+	  if((m->ramp_data.run_state == ACCEL) || (m->ramp_data.run_state == RUN))
+	  {
+		// Find out after how many steps we must start deceleration.
+		// n1 = (n1+n2)decel / (accel + decel)
+		accel_lim = (unsigned int)(((long)step*(m->rampPrint.decel)) / (m->rampPrint.accel+m->rampPrint.decel));
+		// We must accelrate at least 1 step before we can start deceleration.
+		if(accel_lim == 0){
+		  accel_lim = 1;
+		}
 
-    m->timer->Instance->ARR = 10;
-    // Run Timer
-    HAL_TIM_Base_Start_IT(m->timer);
-  }
-  // Only move if number of steps to move is not zero.
-  else if(step != 0){
-    // Refer to documentation for detailed information about these calculations.
+		// Use the limit we hit first to calc decel.
+		if(accel_lim <= m->ramp_data.max_s_lim){
+		  m->ramp_data.decel_val = (int)(accel_lim - step);
+		}
+		else{
+		  m->ramp_data.decel_val = -(int)(((long)m->ramp_data.max_s_lim*(m->rampPrint.accel))/(m->rampPrint.decel));
+		}
+		// We must decelrate at least 1 step to stop.
+		if(m->ramp_data.decel_val == 0){
+		  m->ramp_data.decel_val = -1;
+		}
 
-    // Set max speed limit, by calc min_delay to use in timer.
-    // min_delay = (alpha / tt)/ w
-    m->ramp_data.min_delay = (int)(A_T_x100 / m->rampPrint.speed);
+		// Find step to start decleration.
+		m->ramp_data.decel_start = (unsigned int)(step + m->ramp_data.decel_val);
+	  }
+  } else
+  {
+  */
+	  // If moving only 1 step.
+	  if(step == 1){
+		// Move one step...
+		m->ramp_data.accel_count = -1;
+		// ...in DECEL state.
+		m->ramp_data.run_state = DECEL;
+		// Just a short delay so main() can act on 'running'.
+		m->ramp_data.step_delay = 1000;
+		m->running = TRUE;
 
-    // Set accelration by calc the first (c0) step delay .
-    // step_delay = 1/tt * Sqrt(2*alpha/accel)
-    // step_delay = ( tfreq*0.676/100 )*100 * Sqrt( (2*alpha*10000000000) / (accel*100) )/10000
-    m->ramp_data.step_delay = (unsigned int)((T1_FREQ_148 * Sqrt(A_SQ / m->rampPrint.accel))/100);
+		m->timer->Instance->ARR = 10;
+		// Run Timer
+		HAL_TIM_Base_Start_IT(m->timer);
+	  }
+	  // Only move if number of steps to move is not zero.
+	  else if(step != 0){
+		// Refer to documentation for detailed information about these calculations.
 
-    // Find out after how many steps does the speed hit the max speed limit.
-    // max_s_lim = speed^2 / (2*alpha*accel)
-    max_s_lim = (unsigned int)((long)(m->rampPrint.speed)*(m->rampPrint.speed)/(long)(((long)A_x20000*(m->rampPrint.accel))/100));
-    // If we hit max speed limit before 0,5 step it will round to 0.
-    // But in practice we need to move atleast 1 step to get any speed at all.
-    if(max_s_lim == 0){
-      max_s_lim = 1;
-    }
+		// Set max speed limit, by calc min_delay to use in timer.
+		// min_delay = (alpha / tt)/ w
+		m->ramp_data.min_delay = (int)(A_T_x100 / m->rampPrint.speed);
 
-    // Find out after how many steps we must start deceleration.
-    // n1 = (n1+n2)decel / (accel + decel)
-    accel_lim = (unsigned int)(((long)step*(m->rampPrint.decel)) / (m->rampPrint.accel+m->rampPrint.decel));
-    // We must accelrate at least 1 step before we can start deceleration.
-    if(accel_lim == 0){
-      accel_lim = 1;
-    }
+		m->ramp_data.decel_val = -1;
 
-    // Use the limit we hit first to calc decel.
-    if(accel_lim <= max_s_lim){
-      m->ramp_data.decel_val = (int)(accel_lim - step);
-    }
-    else{
-      m->ramp_data.decel_val = -(int)(((long)max_s_lim*(m->rampPrint.accel))/(m->rampPrint.decel));
-    }
-    // We must decelrate at least 1 step to stop.
-    if(m->ramp_data.decel_val == 0){
-      m->ramp_data.decel_val = -1;
-    }
+		// Find step to start decleration.
+		m->ramp_data.decel_start = (unsigned int)(step + m->ramp_data.decel_val);
 
-    // Find step to start decleration.
-    m->ramp_data.decel_start = (unsigned int)(step + m->ramp_data.decel_val);
+		// If the maximum speed is so low that we dont need to go via accelration state.
+		m->ramp_data.step_delay = m->ramp_data.min_delay;
+		m->ramp_data.run_state = RUN;
 
-    // If the maximum speed is so low that we dont need to go via accelration state.
-    if(m->ramp_data.step_delay <= m->ramp_data.min_delay){
-      m->ramp_data.step_delay = m->ramp_data.min_delay;
-      m->ramp_data.run_state = RUN;
-    }
-    else{
-      m->ramp_data.run_state = ACCEL;
-    }
+		// If the minimum speed is to low
+		if(m->ramp_data.step_delay >= 65536){
+		  m->ramp_data.step_delay = 65535;
+		}
 
-    // If the minimum speed is to low
-    if(m->ramp_data.step_delay >= 65536){
-      m->ramp_data.step_delay = 65535;
-    }
+		// Reset counter.
+		m->ramp_data.accel_count = 0;
+		m->running = TRUE;
 
-    // Reset counter.
-    m->ramp_data.accel_count = 0;
-    m->running = TRUE;
-
-    m->timer->Instance->ARR = 10;
-    // Run Timer
-    HAL_TIM_Base_Start_IT(m->timer);
-  }
+		m->timer->Instance->ARR = 10;
+		// Run Timer
+		HAL_TIM_Base_Start_IT(m->timer);
+	  }
+  //}
 }
 
 /*! \brief Move the stepper motor a given number of steps.
@@ -516,6 +512,7 @@ static inline void limit(MotionController *m)
 	//	m->homed = FALSE;
 	//}
 
+	//TODO If hit barrier just deceleration, not stop immediately
 
 	// If not safe mode active, stop Move in not safe direction
 	if(m->not_safe)
@@ -531,6 +528,7 @@ static inline void limit(MotionController *m)
 			if(m->ramp_data.dir == m->forward_dir)
 				m->ramp_data.run_state = STOP;
 		}
+		//TODO check what that if do ?
 		if(m->ramp_data.dir != (m->forward_dir == m->safe_dir))
 			m->ramp_data.run_state = STOP;
 	}
@@ -550,8 +548,15 @@ static inline void limit(MotionController *m)
 
 static inline void step(MotionController *m)
 {
-	//TODO remove hal library to increase speed
-	HAL_GPIO_TogglePin(m->step_gpio_port, m->step_pin);
+	//Toggle GPIO Pin
+	if ((m->step_gpio_port->ODR & m->step_pin) == m->step_pin)
+	{
+	  m->step_gpio_port->BSRR = (uint32_t)m->step_pin << 16U;
+	}
+	else
+	{
+	  m->step_gpio_port->BSRR = m->step_pin;
+	}
 
 	//Increase step
 	m->ramp_data.step_count++;
@@ -780,4 +785,9 @@ void MotionEnable(MotionController *m)
 uint8_t isMotionEnable(MotionController *m)
 {
 	return m->enable_state;
+}
+
+uint8_t isDuringMotion(MotionController *m)
+{
+	return m->running;
 }

@@ -38,6 +38,9 @@ typedef struct {
   unsigned int step_count;
   // Keep track of remainder from new_step-delay calculation to incrase accurancy
   unsigned int rest;
+  // Number of steps before we hit max speed, save for deceleration separate function
+  unsigned int max_s_lim;
+
 } speedRampData;
 
 typedef struct {
@@ -176,6 +179,7 @@ void MotionControllerInitialize(MotionController *m);
 void MotionDisable(MotionController *m);
 void MotionEnable(MotionController *m);
 uint8_t isMotionEnable(MotionController *m);
+uint8_t isDuringMotion(MotionController *m);
 uint8_t isHomed(MotionController *m);
 uint8_t checkErrors(MotionController *m);
 

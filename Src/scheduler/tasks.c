@@ -240,8 +240,8 @@ void tasksInitialize()
 
 	MotionControllerInitialize(&MotionZ);
 	MotionControllerInitialize(&MotionY);
-	//MotionSetIRUN(&MotionY,31);
-
+	MotionSetIRUN(&MotionY,25);
+	MotionSetIHOLD(&MotionY,15);
 }
 
 void tasksScheduler()

@@ -41,6 +41,8 @@ typedef struct sPrinter {
 	float stepper_factor;
 	//Epson encoder pulses count
 	int encoder_count;
+ 	//Last calculated stepper position, remember for next loop comparation
+	int last_stepper_position;
 	//Start position for printing
 	int print_start_position;
 	//PE Sensor singal activation limit during priting
