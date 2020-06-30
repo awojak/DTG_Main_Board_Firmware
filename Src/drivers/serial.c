@@ -64,9 +64,14 @@ uint32_t serialTxBytesFree(const serialPort_t *instance)
     return instance->vTable->serialTotalTxFree(instance);
 }
 
-uint8_t serialRead(serialPort_t *instance)
+uint8_t serialReadByte(serialPort_t *instance)
 {
-    return instance->vTable->serialRead(instance);
+    return instance->vTable->serialReadByte(instance);
+}
+
+uint8_t serialRead(serialPort_t *instance, uint8_t *data, uint32_t len)
+{
+    return instance->vTable->serialRead(instance, data, len);
 }
 
 void serialSetBaudRate(serialPort_t *instance, uint32_t baudRate)

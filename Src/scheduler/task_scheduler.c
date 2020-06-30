@@ -24,6 +24,12 @@ void TaskTick()
 	tick++;
 }
 
+unsigned int Ticks()
+{
+	//increment scheduler tick
+	return tick;
+}
+
 /**
  * Add task to scheduler queue with priority sort
  */

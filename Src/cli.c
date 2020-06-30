@@ -911,7 +911,7 @@ void cliProcess(void)
     bufWriterFlush(cliWriter);
 
     while (serialRxBytesWaiting(cliPort)) {
-        uint8_t c = serialRead(cliPort);
+        uint8_t c = serialReadByte(cliPort);
         if (c == '\t' || c == '?') {
             // do tab completion
             const clicmd_t *cmd, *pstart = NULL, *pend = NULL;

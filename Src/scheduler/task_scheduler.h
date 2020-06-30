@@ -60,6 +60,7 @@ typedef struct sScheduler {
 
 void SchedulerInit(SchedulerTasks* sts);
 void TaskTick();
+unsigned int Ticks();
 TaskCreateState TaskCreate(SchedulerTasks* sts, Task *t, void *fun_ptr, unsigned char priority);
 TaskRemoveState TaskRemove(SchedulerTasks* sts, Task *t);
 int TaskChangePriority(SchedulerTasks* sts, Task *t, unsigned char priority);

@@ -378,7 +378,7 @@ uint32_t CDC_Send_FreeBytes(void)
         (APP_Rx_ptr_out > APP_Rx_ptr_in ? APP_Rx_ptr_out - APP_Rx_ptr_in : APP_RX_DATA_SIZE - APP_Rx_ptr_in + APP_Rx_ptr_in)
         but without the impact of the condition check.
     */
-    //return ((APP_Tx_ptr_out - APP_Tx_ptr_in) + (-((int)(APP_Tx_ptr_out <= APP_Tx_ptr_in)) & TX_DATA_SIZE)) - 1;
+   //return ((APP_Tx_ptr_out - APP_Tx_ptr_in) + (-((int)(APP_Tx_ptr_out <= APP_Tx_ptr_in)) & TX_DATA_SIZE)) - 1;
 	//TODO change if use DMA, maybe
 	return APP_TX_DATA_SIZE;
 }

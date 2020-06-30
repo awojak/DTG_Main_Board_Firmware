@@ -43,16 +43,21 @@ static uint32_t usbVcpAvailable(const serialPort_t *instance)
     return CDC_Receive_BytesAvailable();
 }
 
-static uint8_t usbVcpRead(serialPort_t *instance)
+static uint8_t usbVcpRead(serialPort_t *instance, uint8_t *data, uint32_t len)
 {
     UNUSED(instance);
 
-    uint8_t buf[1];
+    return CDC_Receive_DATA(data, len);
+}
 
-    while (true) {
-        if (CDC_Receive_DATA(buf, 1))
-            return buf[0];
-    }
+static uint8_t usbVcpReadByte(serialPort_t *instance)
+{
+    UNUSED(instance);
+
+    uint8_t buff[1];
+    CDC_Receive_DATA(buff, 1);
+
+    return buff[0];
 }
 
 
@@ -142,7 +147,8 @@ static const struct serialPortVTable usbVTable[] = {
         .serialWrite = usbVcpWrite,
         .serialTotalRxWaiting = usbVcpAvailable,
         .serialTotalTxFree = usbTxBytesFree,
-        .serialRead = usbVcpRead,
+        .serialReadByte = usbVcpReadByte,
+				.serialRead = usbVcpRead,
         .serialSetBaudRate = usbVcpSetBaudRate,
         .isSerialTransmitBufferEmpty = isUsbVcpTransmitBufferEmpty,
         .setMode = usbVcpSetMode,

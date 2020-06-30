@@ -16,6 +16,7 @@
 #include "../drivers/M24C0x.h"
 #include "../parameters.h"
 #include "../printer.h"
+#include "../min.h"
 
 extern UART_HandleTypeDef huart2;
 
@@ -24,6 +25,9 @@ extern TIM_HandleTypeDef htim9;
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
 serialPort_t *serialPort = NULL;
+
+struct min_context min_pc;
+struct min_context min_hmi;
 
 SchedulerTasks stsTasks;
 Task tHandleUSBCommunication;
@@ -34,6 +38,8 @@ Task tCore;
 
 char text[12] = {0};
 uint8_t flag = 1;
+uint8_t minMode = 1;
+uint8_t enableCli = 1;
 
 MotionController MotionY = {
 		.back_down_limit_gpio_port = LIMIT_Y_BACK_GPIO_Port,
@@ -139,6 +145,9 @@ tPrinter Printer = {
 
 static void taskHandleUSBCommunication()
 {
+	uint32_t waitingBytes;
+	uint8_t c = 0;
+	/*
     // in cli mode, all serial stuff goes to here. enter cli mode by sending #
     if (cliMode) {
         cliProcess();
@@ -149,16 +158,37 @@ static void taskHandleUSBCommunication()
 		{
 			while(serialRxBytesWaiting(serialPort))
 			{
-				uint8_t c = serialRead(serialPort);
+				uint8_t c = serialReadByte(serialPort);
 				if (c == '#') {
 					cliEnter(serialPort);
+					//disable minMode
+					minMode = 0;
 				}
+
+				min_poll(&min_pc, (uint8_t *)c, 1);
 			}
 		}
     }
+    */
+	waitingBytes = serialRxBytesWaiting(serialPort);
 
-    // Allow MSP processing even if in CLI mode
-    //mspSerialProcess(ARMING_FLAG(ARMED) ? MSP_SKIP_NON_MSP_DATA : MSP_EVALUATE_NON_MSP_DATA, mspFcProcessCommand);
+	//
+	if(waitingBytes == 0)
+	{
+			min_poll(&min_pc, &c, 0);
+	}
+
+	//Tutaj jest powa¿ny problem poniewa¿ zawiesi aplikacjê w momencie gdy du¿a ilosc danych bedzie wysylala
+	//Moze sie okazac ze usb nie bedzie w stanie wysla odpiwednio duzo infromacji
+
+	//Po czasie kiedy wszystkie wiadomosci wejsciowe zostana obsluzone, oprogramowanie sie odwiesza nie wystepuja problemy z wywaleniem aplikacji
+	while(waitingBytes)
+	{
+		uint8_t c = serialReadByte(serialPort);
+		min_poll(&min_pc, &c, 1);
+		waitingBytes--;
+	}
+
 }
 
 void taskMotionProcess()
@@ -218,6 +248,9 @@ void tasksInitialize()
 {
 	SchedulerInit(&stsTasks);
 
+	min_init_context(&min_pc, 0);
+	min_init_context(&min_hmi, 1);
+
 	M24C0XInitialize(&eeprom);
 	serialPort = usbVcpOpen();
 
@@ -247,5 +280,43 @@ void tasksInitialize()
 void tasksScheduler()
 {
 	Scheduler(&stsTasks);
+}
+
+////////////////////////////////// CALLBACKS ///////////////////////////////////
+
+uint16_t min_tx_space(uint8_t port)
+{
+  uint16_t n = serialTxBytesFree(serialPort);
+  return n;
+}
+
+// Send a character on the designated port.
+void min_tx_byte(uint8_t port, uint8_t byte)
+{
+	serialWriteBuf(serialPort, &byte, 1);
+}
+
+// Tell MIN the current time in milliseconds.
+uint32_t min_time_ms(void)
+{
+  return Ticks();
+}
+
+void min_application_handler(uint8_t min_id, uint8_t *min_payload, uint8_t len_payload, uint8_t port)
+{
+  // In this simple example application we just echo the frame back when we get one
+  bool result = min_queue_frame(&min_pc, min_id, min_payload, len_payload);
+  if(!result) {
+    //Serial.println("Queue failed");
+  }
+}
+
+void min_tx_start(uint8_t port)
+{
+	return;
+}
+void min_tx_finished(uint8_t port)
+{
+	return;
 }
 
