@@ -26,6 +26,7 @@
 #include "scheduler/task_scheduler.h"
 #include "drivers/motion_controller.h"
 #include "printer.h"
+#include "UART_DMA.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -69,6 +70,7 @@ extern UART_HandleTypeDef huart6;
 extern MotionController MotionY;
 extern MotionController MotionZ;
 extern tPrinter Printer;
+extern UARTDMA_HandleTypeDef huartdma;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -274,11 +276,13 @@ void TIM1_UP_TIM10_IRQHandler(void)
 void DMA2_Stream1_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA2_Stream1_IRQn 0 */
-
+	//Take control by UARTDMA library
+	UARTDMA_DmaRxIrqHandler(&huartdma);
+#if(0)
   /* USER CODE END DMA2_Stream1_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_usart6_rx);
   /* USER CODE BEGIN DMA2_Stream1_IRQn 1 */
-
+#endif
   /* USER CODE END DMA2_Stream1_IRQn 1 */
 }
 
@@ -316,11 +320,13 @@ void DMA2_Stream6_IRQHandler(void)
 void USART6_IRQHandler(void)
 {
   /* USER CODE BEGIN USART6_IRQn 0 */
-
+	//Take control by UARTDMA library
+	UARTDMA_UartIrqHandler(&huartdma);
+#if(0)
   /* USER CODE END USART6_IRQn 0 */
   HAL_UART_IRQHandler(&huart6);
   /* USER CODE BEGIN USART6_IRQn 1 */
-
+#endif
   /* USER CODE END USART6_IRQn 1 */
 }
 

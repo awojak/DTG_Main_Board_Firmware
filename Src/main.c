@@ -26,6 +26,7 @@
 /* USER CODE BEGIN Includes */
 #include "scheduler/task_scheduler.h"
 #include "scheduler/tasks.h"
+#include "UART_DMA.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -60,7 +61,7 @@ DMA_HandleTypeDef hdma_usart6_rx;
 DMA_HandleTypeDef hdma_usart6_tx;
 
 /* USER CODE BEGIN PV */
-
+UARTDMA_HandleTypeDef huartdma;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -133,6 +134,10 @@ int main(void)
   /* USER CODE BEGIN 2 */
   //Start encoder for EPSON printer
   HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
+
+  //Start UART6 RX DMA communication
+  UARTDMA_Init(&huartdma, &huart6);
+
   //Initialize tasks
   tasksInitialize();
   /* USER CODE END 2 */

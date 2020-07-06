@@ -17,12 +17,15 @@
 #include "../parameters.h"
 #include "../printer.h"
 #include "../min.h"
+#include "../UART_DMA.h"
 
 extern UART_HandleTypeDef huart2;
 
 extern TIM_HandleTypeDef htim10;
 extern TIM_HandleTypeDef htim9;
 extern USBD_HandleTypeDef hUsbDeviceFS;
+
+extern UARTDMA_HandleTypeDef huartdma;
 
 serialPort_t *serialPort = NULL;
 
@@ -31,6 +34,7 @@ struct min_context min_hmi;
 
 SchedulerTasks stsTasks;
 Task tHandleUSBCommunication;
+Task tHandleUART8;
 
 Task tPrinterProcess, tMotionProcess;
 Task tLedTask, tSendPos;
@@ -191,6 +195,13 @@ static void taskHandleUSBCommunication()
 
 }
 
+//Handle communication with UART
+static void taskHandleUART8()
+{
+	//Check if some data to send
+	UARTDMA_TxBufferFlush(&huartdma);
+}
+
 void taskMotionProcess()
 {
 	MotionProcess(&MotionZ);
@@ -263,6 +274,9 @@ void tasksInitialize()
 	TaskCreate(&stsTasks, &tHandleUSBCommunication, &taskHandleUSBCommunication, 50);
 	TaskStartRepeatedly(&tHandleUSBCommunication, 10);
 
+	TaskCreate(&stsTasks, &tHandleUART8, &taskHandleUART8, 49);
+	TaskStartRepeatedly(&tHandleUART8, 1);
+
 	TaskCreate(&stsTasks, &tMotionProcess, &taskMotionProcess, 10);
 	TaskStartRepeatedly(&tMotionProcess, 50);
 
@@ -286,14 +300,29 @@ void tasksScheduler()
 
 uint16_t min_tx_space(uint8_t port)
 {
-  uint16_t n = serialTxBytesFree(serialPort);
-  return n;
+	uint16_t n = 0;
+	if(port == 0)
+	{
+		n = serialTxBytesFree(serialPort);
+	}
+	else if(port == 1)
+	{
+		n = UARTDMA_TxBufferSpace(&huartdma);
+	}
+
+	return n;
 }
 
 // Send a character on the designated port.
 void min_tx_byte(uint8_t port, uint8_t byte)
 {
-	serialWriteBuf(serialPort, &byte, 1);
+	if(port == 0)
+	{
+			serialWriteBuf(serialPort, &byte, 1);
+	} else if(port == 1)
+	{
+			UARTDMA_TxBufferAppend(&huartdma, byte);
+	}
 }
 
 // Tell MIN the current time in milliseconds.
@@ -320,3 +349,8 @@ void min_tx_finished(uint8_t port)
 	return;
 }
 
+// UART DMA Callback
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+	UARTDMA_DmaTransmitionCompletedIrq(&huartdma);
+}
