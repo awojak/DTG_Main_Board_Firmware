@@ -198,6 +198,22 @@ static void taskHandleUSBCommunication()
 //Handle communication with UART
 static void taskHandleUART8()
 {
+	int c = 0;
+
+	do {
+
+	c = UARTDMA_GetCharFromBuffer(&huartdma);
+
+	if(c == -1)
+	{
+			min_poll(&min_hmi, (uint8_t *)&c, 0);
+			break;
+	}
+
+	min_poll(&min_hmi, (uint8_t *)&c, 1);
+
+	}while(true);
+
 	//Check if some data to send
 	UARTDMA_TxBufferFlush(&huartdma);
 }
@@ -334,7 +350,7 @@ uint32_t min_time_ms(void)
 void min_application_handler(uint8_t min_id, uint8_t *min_payload, uint8_t len_payload, uint8_t port)
 {
   // In this simple example application we just echo the frame back when we get one
-  bool result = min_queue_frame(&min_pc, min_id, min_payload, len_payload);
+  bool result = min_queue_frame(&min_hmi, min_id, min_payload, len_payload);
   if(!result) {
     //Serial.println("Queue failed");
   }

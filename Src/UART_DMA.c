@@ -39,7 +39,7 @@ void UARTDMA_DmaRxIrqHandler(UARTDMA_HandleTypeDef *huartdma)
 		// Write received data for UART main buffer - circular buffer
 		for(i = 0; i < Length; i++)
 		{
-			TempHead = (huartdma->UartRxBufferHead + 1) % UART_BUFFER_SIZE;
+			TempHead = (huartdma->UartRxBufferHead + 1) % UART_RX_BUFFER_SIZE;
 			if(TempHead == huartdma->UartRxBufferTail)
 			{
 				huartdma->UartRxBufferHead = huartdma->UartRxBufferTail;	// No room for new data
@@ -64,7 +64,7 @@ int UARTDMA_GetCharFromBuffer(UARTDMA_HandleTypeDef *huartdma)
 	{
 		return -1; // error - no char to return
 	}
-	huartdma->UartRxBufferTail = (huartdma->UartRxBufferTail + 1) % UART_BUFFER_SIZE;
+	huartdma->UartRxBufferTail = (huartdma->UartRxBufferTail + 1) % UART_RX_BUFFER_SIZE;
 
 	return huartdma->UART_Buffer[huartdma->UartRxBufferTail];
 }

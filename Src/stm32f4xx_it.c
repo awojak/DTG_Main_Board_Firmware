@@ -322,11 +322,11 @@ void USART6_IRQHandler(void)
   /* USER CODE BEGIN USART6_IRQn 0 */
 	//Take control by UARTDMA library
 	UARTDMA_UartIrqHandler(&huartdma);
-#if(0)
+//#if(0)
   /* USER CODE END USART6_IRQn 0 */
   HAL_UART_IRQHandler(&huart6);
   /* USER CODE BEGIN USART6_IRQn 1 */
-#endif
+//#endif
   /* USER CODE END USART6_IRQn 1 */
 }
 
