@@ -18,6 +18,7 @@
 #include "../printer.h"
 #include "../min.h"
 #include "../UART_DMA.h"
+#include "../command_interpreter.h"
 
 extern UART_HandleTypeDef huart2;
 
@@ -40,6 +41,7 @@ Task tPrinterProcess, tMotionProcess;
 Task tLedTask, tSendPos;
 Task tCore;
 
+tCommandSettings CMDinterpreter;
 char text[12] = {0};
 uint8_t flag = 1;
 uint8_t minMode = 1;
@@ -291,7 +293,7 @@ void tasksInitialize()
 	TaskStartRepeatedly(&tHandleUSBCommunication, 10);
 
 	TaskCreate(&stsTasks, &tHandleUART8, &taskHandleUART8, 49);
-	TaskStartRepeatedly(&tHandleUART8, 1);
+	TaskStartRepeatedly(&tHandleUART8, 10);
 
 	TaskCreate(&stsTasks, &tMotionProcess, &taskMotionProcess, 10);
 	TaskStartRepeatedly(&tMotionProcess, 50);
@@ -349,11 +351,17 @@ uint32_t min_time_ms(void)
 
 void min_application_handler(uint8_t min_id, uint8_t *min_payload, uint8_t len_payload, uint8_t port)
 {
+	//Send payload to command interpreter
+	commandInterpreter(&CMDinterpreter, min_id, min_payload, len_payload, port);
+
+	//Just for SOAK test
+	/*
   // In this simple example application we just echo the frame back when we get one
   bool result = min_queue_frame(&min_hmi, min_id, min_payload, len_payload);
   if(!result) {
     //Serial.println("Queue failed");
   }
+  */
 }
 
 void min_tx_start(uint8_t port)
