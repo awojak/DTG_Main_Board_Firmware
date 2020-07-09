@@ -11,10 +11,7 @@
 #include "main.h"
 #include "drivers/serial.h"
 
-typedef struct {
-			uint8_t header_id;
-	    void (*func)(uint8_t *min_payload, uint8_t len_payload);
-} tHeader;
+#define ERROR_CMD 0xA0
 
 #define COMMAND_DEF(header_id, method) \
 { \
@@ -22,28 +19,22 @@ typedef struct {
     method \
 }
 
-/* Message buffers max size */
-/* TODO Always adjust to your application */
-#define RX_MSG_SIZE 24
-#define TX_MSG_SIZE 24
+typedef void (*transmitFunc_t)(void *arg, void *data, int count);
 
-typedef struct sCommandSettings {
-	serialPort_t *interface;
-	uint8_t rx_data[RX_MSG_SIZE];
-	uint8_t rx_index;
-	uint8_t tx_data[TX_MSG_SIZE];
-	uint8_t tx_index;
+typedef struct sCMDInt{
+	transmitFunc_t transmit;
+	uint8_t min_id;
+	uint8_t *min_payload;
+	uint8_t len_payload;
+	uint8_t port;
+} tCMDInt;
 
-	//flags
-	uint8_t frame_complete; // 0 - no wait for more data, 1 - yes
-	/* Sometimes interface is busy or need more time to answer, check if replied */
-	uint8_t replied; // 0 - now try answer again, 1- yes
+typedef struct {
+			uint8_t header_id;
+	    bool (*func)(tCMDInt *cmd_i);
+} tHeader;
 
-	/* Store time of received first part of frame, useful for timeout */
-	int32_t start_time;
-
-} tCommandSettings;
-
-void commandInterpreter(tCommandSettings *Node, uint8_t min_id, uint8_t *min_payload, uint8_t len_payload, uint8_t port);
+void commandInterpreter(tCMDInt *cmd_i);
+void commandInit(tCMDInt *cmd_i, transmitFunc_t transmit);
 
 #endif /* COMMAND_INTERPRETER_H_ */

@@ -7,7 +7,19 @@
  */
 
 #include "tools.h"
-//#include "main.h"
+#include "string.h"
+
+void float2Bytes(float val, uint8_t *byte_array)
+{
+	union {
+		float float_var;
+		uint8_t bytes[4];
+	} conv;
+
+	conv.float_var = val;
+
+	memcpy(byte_array, conv.bytes, 4);
+}
 
 /**
  * Function convert integer number to text

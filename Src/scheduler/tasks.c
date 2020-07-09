@@ -41,7 +41,7 @@ Task tPrinterProcess, tMotionProcess;
 Task tLedTask, tSendPos;
 Task tCore;
 
-tCommandSettings CMDinterpreter;
+tCMDInt CMD;
 char text[12] = {0};
 uint8_t flag = 1;
 uint8_t minMode = 1;
@@ -148,6 +148,9 @@ tPrinter Printer = {
 		.eject_trigger_position = PARAMETER_PRINT_EJECT_TRIGGER_POS, //For Epson P600, todo need to be adjusted
 		.eject_position = PARAMETER_PRINT_EJECT_POS //todo need to be adjusted for CJ200 printer
 };
+
+//Functions Prototype
+void transmitShim(tCMDInt*, uint8_t*, uint8_t);
 
 static void taskHandleUSBCommunication()
 {
@@ -280,6 +283,7 @@ void tasksInitialize()
 	min_init_context(&min_pc, 0);
 	min_init_context(&min_hmi, 1);
 
+	commandInit(&CMD, (transmitFunc_t)transmitShim);
 	M24C0XInitialize(&eeprom);
 	serialPort = usbVcpOpen();
 
@@ -349,10 +353,23 @@ uint32_t min_time_ms(void)
   return Ticks();
 }
 
+void transmitShim(tCMDInt *cmd_i, uint8_t *data, uint8_t len)
+{
+	  bool result = min_queue_frame(&min_hmi, cmd_i->min_id, data, len);
+	  if(!result) {
+	    //Serial.println("Queue failed");
+	  }
+}
+
 void min_application_handler(uint8_t min_id, uint8_t *min_payload, uint8_t len_payload, uint8_t port)
 {
 	//Send payload to command interpreter
-	commandInterpreter(&CMDinterpreter, min_id, min_payload, len_payload, port);
+	CMD.len_payload = len_payload;
+	CMD.min_id = min_id;
+	CMD.min_payload = min_payload;
+	CMD.port = port;
+
+	commandInterpreter(&CMD);
 
 	//Just for SOAK test
 	/*
