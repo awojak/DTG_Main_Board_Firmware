@@ -164,6 +164,7 @@ void Error_Handler(void);
 #define LCD_DB4_GPIO_Port GPIOE
 #define LCD_DB5_Pin GPIO_PIN_1
 #define LCD_DB5_GPIO_Port GPIOE
+
 /* USER CODE BEGIN Private defines */
 //#define MAX_PROFILE_COUNT 3
 
@@ -193,5 +194,3 @@ void Error_Handler(void);
 #endif
 
 #endif /* __MAIN_H */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

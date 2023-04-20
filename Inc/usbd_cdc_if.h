@@ -37,16 +37,19 @@
   * @brief For Usb device.
   * @{
   */
-  
+
 /** @defgroup USBD_CDC_IF USBD_CDC_IF
   * @brief Usb VCP device module
   * @{
-  */ 
+  */
 
 /** @defgroup USBD_CDC_IF_Exported_Defines USBD_CDC_IF_Exported_Defines
   * @brief Defines.
   * @{
   */
+/* Define size for the receive and transmit buffer over CDC */
+#define APP_RX_DATA_SIZE  2048
+#define APP_TX_DATA_SIZE  2048
 /* USER CODE BEGIN EXPORTED_DEFINES */
 
 /* USER CODE END EXPORTED_DEFINES */
@@ -131,4 +134,3 @@ uint32_t CDC_Send_DATA(const uint8_t *ptrBuffer, uint32_t sendLength);
 
 #endif /* __USBD_CDC_IF_H__ */
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

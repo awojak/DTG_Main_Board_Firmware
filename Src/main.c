@@ -17,7 +17,6 @@
   ******************************************************************************
   */
 /* USER CODE END Header */
-
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_device.h"
@@ -68,15 +67,15 @@ UARTDMA_HandleTypeDef huartdma;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
-static void MX_ADC1_Init(void);
 static void MX_I2C3_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM10_Init(void);
 static void MX_TIM11_Init(void);
 static void MX_USART2_UART_Init(void);
-static void MX_USART6_UART_Init(void);
+static void MX_ADC1_Init(void);
 static void MX_TIM9_Init(void);
+static void MX_USART6_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -121,16 +120,16 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_ADC1_Init();
   MX_I2C3_Init();
   MX_SPI1_Init();
   MX_TIM2_Init();
   MX_TIM10_Init();
   MX_TIM11_Init();
   MX_USART2_UART_Init();
-  MX_USART6_UART_Init();
+  MX_ADC1_Init();
   MX_USB_DEVICE_Init();
   MX_TIM9_Init();
+  MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
   //Start encoder for EPSON printer
   HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
@@ -164,11 +163,13 @@ void SystemClock_Config(void)
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  /** Configure the main internal regulator output voltage 
+  /** Configure the main internal regulator output voltage
   */
   __HAL_RCC_PWR_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE2);
-  /** Initializes the CPU, AHB and APB busses clocks 
+
+  /** Initializes the RCC Oscillators according to the specified parameters
+  * in the RCC_OscInitTypeDef structure.
   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
@@ -182,7 +183,8 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  /** Initializes the CPU, AHB and APB busses clocks 
+
+  /** Initializes the CPU, AHB and APB buses clocks
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
@@ -214,7 +216,8 @@ static void MX_ADC1_Init(void)
   /* USER CODE BEGIN ADC1_Init 1 */
 
   /* USER CODE END ADC1_Init 1 */
-  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion) 
+
+  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
   */
   hadc1.Instance = ADC1;
   hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
@@ -232,7 +235,8 @@ static void MX_ADC1_Init(void)
   {
     Error_Handler();
   }
-  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
   sConfig.Channel = ADC_CHANNEL_8;
   sConfig.Rank = 1;
@@ -457,7 +461,7 @@ static void MX_TIM11_Init(void)
   htim11.Instance = TIM11;
   htim11.Init.Prescaler = 0;
   htim11.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim11.Init.Period = 0;
+  htim11.Init.Period = 65535;
   htim11.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim11.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim11) != HAL_OK)
@@ -549,10 +553,10 @@ static void MX_USART6_UART_Init(void)
 
 }
 
-/** 
+/**
   * Enable DMA controller clock
   */
-static void MX_DMA_Init(void) 
+static void MX_DMA_Init(void)
 {
 
   /* DMA controller clock enable */
@@ -576,6 +580,8 @@ static void MX_DMA_Init(void)
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
+/* USER CODE BEGIN MX_GPIO_Init_1 */
+/* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOE_CLK_ENABLE();
@@ -586,14 +592,14 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, LCD_DB6_Pin|LCD_DB7_Pin|LCD_E_Pin|LED1_CONTROL_Pin 
+  HAL_GPIO_WritePin(GPIOE, LCD_DB6_Pin|LCD_DB7_Pin|LCD_E_Pin|LED1_CONTROL_Pin
                           |LED2_CONTROL_Pin|TABLE_COIL_Pin|LCD_DB4_Pin|LCD_DB5_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, LCD_RS_Pin|LED_STATUS_Pin|OPC1_SIGNAL_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, OPE_SIGNAL_Pin|OUTPUT1_Pin|LED3_Pin|LED4_Pin 
+  HAL_GPIO_WritePin(GPIOB, OPE_SIGNAL_Pin|OUTPUT1_Pin|LED3_Pin|LED4_Pin
                           |Z_STEP_Pin|Z_DIR_Pin|Y_STEP_Pin|Y_DIR_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
@@ -602,9 +608,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, Z_ENABLE_Pin|Y_ENABLE_Pin, GPIO_PIN_SET);
 
-  /*Configure GPIO pins : LCD_DB6_Pin LCD_DB7_Pin LCD_E_Pin LED1_CONTROL_Pin 
+  /*Configure GPIO pins : LCD_DB6_Pin LCD_DB7_Pin LCD_E_Pin LED1_CONTROL_Pin
                            LED2_CONTROL_Pin TABLE_COIL_Pin LCD_DB4_Pin LCD_DB5_Pin */
-  GPIO_InitStruct.Pin = LCD_DB6_Pin|LCD_DB7_Pin|LCD_E_Pin|LED1_CONTROL_Pin 
+  GPIO_InitStruct.Pin = LCD_DB6_Pin|LCD_DB7_Pin|LCD_E_Pin|LED1_CONTROL_Pin
                           |LED2_CONTROL_Pin|TABLE_COIL_Pin|LCD_DB4_Pin|LCD_DB5_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -618,9 +624,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : INPUT2_Pin INPUT1_Pin PRINTER_POWER_DETECT_Pin LIMIT_Z_UP_Pin 
+  /*Configure GPIO pins : INPUT2_Pin INPUT1_Pin PRINTER_POWER_DETECT_Pin LIMIT_Z_UP_Pin
                            Z_INDEX_Pin Z_DIAG_Pin */
-  GPIO_InitStruct.Pin = INPUT2_Pin|INPUT1_Pin|PRINTER_POWER_DETECT_Pin|LIMIT_Z_UP_Pin 
+  GPIO_InitStruct.Pin = INPUT2_Pin|INPUT1_Pin|PRINTER_POWER_DETECT_Pin|LIMIT_Z_UP_Pin
                           |Z_INDEX_Pin|Z_DIAG_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -638,9 +644,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(EMERGENCY_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : OPE_SIGNAL_Pin OUTPUT1_Pin LED3_Pin LED4_Pin 
+  /*Configure GPIO pins : OPE_SIGNAL_Pin OUTPUT1_Pin LED3_Pin LED4_Pin
                            Z_STEP_Pin Z_DIR_Pin Y_STEP_Pin Y_DIR_Pin */
-  GPIO_InitStruct.Pin = OPE_SIGNAL_Pin|OUTPUT1_Pin|LED3_Pin|LED4_Pin 
+  GPIO_InitStruct.Pin = OPE_SIGNAL_Pin|OUTPUT1_Pin|LED3_Pin|LED4_Pin
                           |Z_STEP_Pin|Z_DIR_Pin|Y_STEP_Pin|Y_DIR_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -659,9 +665,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : KEY_1_Pin KEY_2_Pin KEY_3_Pin KEY_4_Pin 
+  /*Configure GPIO pins : KEY_1_Pin KEY_2_Pin KEY_3_Pin KEY_4_Pin
                            LIMIT_Z_DOWN_Pin LIMIT_Y_FRONT_Pin Y_INDEX_Pin Y_DIAG_Pin */
-  GPIO_InitStruct.Pin = KEY_1_Pin|KEY_2_Pin|KEY_3_Pin|KEY_4_Pin 
+  GPIO_InitStruct.Pin = KEY_1_Pin|KEY_2_Pin|KEY_3_Pin|KEY_4_Pin
                           |LIMIT_Z_DOWN_Pin|LIMIT_Y_FRONT_Pin|Y_INDEX_Pin|Y_DIAG_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -687,6 +693,8 @@ static void MX_GPIO_Init(void)
   HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
+/* USER CODE BEGIN MX_GPIO_Init_2 */
+/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
@@ -714,12 +722,10 @@ void Error_Handler(void)
   * @retval None
   */
 void assert_failed(uint8_t *file, uint32_t line)
-{ 
+{
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
      tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
